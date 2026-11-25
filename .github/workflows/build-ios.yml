@@ -1,0 +1,145 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.2.0)"
+        required: true
+        default: "1.0.0"
+      app_name:
+        description: "App display name"
+        required: true
+        default: "WebDAVify"
+      bundle_id:
+        description: "Bundle identifier (e.g. com.example.mygallery)"
+        required: true
+        default: "com.djrenzo.WebDAVify"
+
+permissions:
+  contents: write
+
+env:
+  # Xcode project / scheme / source folder as exported from Superapp (see project.yml).
+  XCODE_PROJECT_NAME: TorBoxLibraryManager
+  IPA_NAME: WebDAVify
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Render app icon
+        run: |
+          # public/icon.svg is the single source of truth. Render it at 1024x1024 into
+          # the app's asset catalog and into public/icon.png (used by source.json).
+          brew install librsvg
+          ICONSET="$XCODE_PROJECT_NAME/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p build
+          rsvg-convert -w 1024 -h 1024 --background-color '#0D131B' \
+            public/icon.svg -o build/icon-1024.png
+          cp build/icon-1024.png "$ICONSET/AppIcon.png"
+          cp build/icon-1024.png public/icon.png
+          python3 - "$ICONSET/Contents.json" <<'EOF'
+          import json, sys
+          path = sys.argv[1]
+          with open(path) as f:
+              data = json.load(f)
+          data['images'][0]['filename'] = 'AppIcon.png'
+          with open(path, 'w') as f:
+              json.dump(data, f, indent=2)
+          EOF
+
+      - name: Set app display name
+        run: |
+          # project.yml hardcodes CFBundleDisplayName; patch it so XcodeGen writes the
+          # requested name into Info.plist. PRODUCT_NAME is left alone so the Swift
+          # module, scheme and archive paths stay stable.
+          APP_NAME="${{ inputs.app_name }}" python3 - <<'EOF'
+          import os, re
+          path = 'project.yml'
+          name = os.environ['APP_NAME'].replace("'", "''")
+          with open(path) as f:
+              text = f.read()
+          text, n = re.subn(r'(?m)^(\s*CFBundleDisplayName:).*$', rf"\1 '{name}'", text)
+          assert n == 1, f'expected one CFBundleDisplayName in project.yml, found {n}'
+          with open(path, 'w') as f:
+              f.write(text)
+          EOF
+          grep -n CFBundleDisplayName project.yml
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build archive
+        run: |
+          xcodebuild \
+            -project "$XCODE_PROJECT_NAME.xcodeproj" \
+            -scheme "$XCODE_PROJECT_NAME" \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "build/$XCODE_PROJECT_NAME.xcarchive" \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="${{ inputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            PRODUCT_BUNDLE_IDENTIFIER="${{ inputs.bundle_id }}"
+
+      - name: Create IPA
+        run: |
+          mkdir -p build/Payload
+          APP_PATH=$(find "build/$XCODE_PROJECT_NAME.xcarchive/Products/Applications" \
+            -maxdepth 1 -name '*.app' | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app found in archive" >&2
+            exit 1
+          fi
+          cp -R "$APP_PATH" build/Payload/
+          cd build
+          zip -qr "$IPA_NAME.ipa" Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_NAME }}-${{ inputs.version }}
+          path: build/${{ env.IPA_NAME }}.ipa
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: ${{ inputs.app_name }} v${{ inputs.version }}
+          generate_release_notes: true
+          files: build/${{ env.IPA_NAME }}.ipa
+
+      - name: Update SideStore / LiveContainer source
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          BUNDLE_ID: ${{ inputs.bundle_id }}
+          MIN_OS_VERSION: "17.0"
+          DOWNLOAD_URL: ${{ github.server_url }}/${{ github.repository }}/releases/download/v${{ inputs.version }}/${{ env.IPA_NAME }}.ipa
+        run: |
+          # Pick up any commits pushed while the build ran, then add this release.
+          # -f drops the build-time edits to project.yml/icon; build/ is gitignored and kept.
+          git fetch origin "${{ github.ref_name }}"
+          git checkout -f -B "${{ github.ref_name }}" "origin/${{ github.ref_name }}"
+          # Publish the same icon the app was built with (raw URL referenced by source.json).
+          mkdir -p public
+          cp build/icon-1024.png public/icon.png
+          python3 scripts/update_source.py source.json "build/$IPA_NAME.ipa" \
+            "${{ inputs.version }}" "${{ github.run_number }}" "$DOWNLOAD_URL"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source.json public/icon.png
+          git commit -m "Update source.json for ${{ inputs.app_name }} v${{ inputs.version }}"
+          git push origin "HEAD:${{ github.ref_name }}"

@@ -1,0 +1,28 @@
+{
+  "name": "WebDAVify",
+  "identifier": "com.djrenzo.WebDAVify.source",
+  "subtitle": "WebDAVify builds from GitHub releases",
+  "description": "Unsigned WebDAVify IPA builds for SideStore and LiveContainer.",
+  "website": "https://github.com/djrenzo/webdavapp",
+  "iconURL": "https://raw.githubusercontent.com/djrenzo/webdavapp/main/public/icon.png",
+  "tintColor": "#5B87FF",
+  "apps": [
+    {
+      "name": "WebDAVify",
+      "bundleIdentifier": "com.djrenzo.WebDAVify",
+      "developerName": "djrenzo",
+      "subtitle": "Library manager for WebDAV-backed media",
+      "localizedDescription": "A native SwiftUI library manager for TorBox/WebDAV media catalogs.",
+      "iconURL": "https://raw.githubusercontent.com/djrenzo/webdavapp/main/public/icon.png",
+      "tintColor": "#5B87FF",
+      "category": "utilities",
+      "screenshots": [],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      },
+      "versions": []
+    }
+  ],
+  "news": []
+}

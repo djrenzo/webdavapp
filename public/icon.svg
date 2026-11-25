@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1B2638"/>
+      <stop offset="1" stop-color="#0B1018"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="512" cy="430" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B87FF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#5B87FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8FB0FF"/>
+      <stop offset="1" stop-color="#4A72F0"/>
+    </linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC56E"/>
+      <stop offset="1" stop-color="#F0962E"/>
+    </linearGradient>
+    <linearGradient id="back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4558"/>
+      <stop offset="1" stop-color="#262E3B"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+
+  <!-- Cloud (WebDAV storage) -->
+  <path fill="url(#cloud)" d="M262 560
+    C196 560 150 512 150 452
+    C150 394 194 348 252 344
+    C266 266 334 208 416 208
+    C470 208 518 233 548 274
+    C570 262 596 256 622 256
+    C708 256 778 322 786 406
+    C838 418 874 462 874 514
+    C874 540 864 560 850 560 Z"/>
+
+  <!-- Fanned posters (library) -->
+  <g transform="translate(512 790)">
+    <g transform="rotate(-14)">
+      <rect x="-300" y="-390" width="220" height="330" rx="26" fill="url(#back)" stroke="#5B6880" stroke-opacity="0.6" stroke-width="6"/>
+    </g>
+    <g transform="rotate(14)">
+      <rect x="80" y="-390" width="220" height="330" rx="26" fill="url(#back)" stroke="#5B6880" stroke-opacity="0.6" stroke-width="6"/>
+    </g>
+    <rect x="-130" y="-420" width="260" height="390" rx="30" fill="url(#front)"/>
+    <rect x="-130" y="-420" width="260" height="390" rx="30" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="6"/>
+    <!-- Play mark -->
+    <path d="M-38 -290 L62 -225 L-38 -160 Z" fill="#0D131B" stroke="#0D131B" stroke-width="18" stroke-linejoin="round"/>
+  </g>
+</svg>

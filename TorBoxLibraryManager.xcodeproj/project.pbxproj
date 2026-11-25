@@ -1,0 +1,332 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		16843DF7114C7F25485F2A21 /* LocalEntryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 283B728AEC656283D330BA9E /* LocalEntryEditor.swift */; };
+		3641C4FA0026DC05A94DA6FD /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30DF3101A4B5F0E7E20FFD22 /* LibraryModel.swift */; };
+		3ED4987437D17140B49E7A46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7270EAC2E392434E282FFB47 /* Assets.xcassets */; };
+		4103BDE7687F6A4994528584 /* TitleGrouper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512FF4606E4681BFC205C728 /* TitleGrouper.swift */; };
+		59CBA13C5B6353AC668DBA7D /* PosterCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF272B595CA57FCACAB39B7 /* PosterCard.swift */; };
+		627D9D5E088D2365FE89F31F /* EpisodeNumbering.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37516D69E188F3B4B00E90D /* EpisodeNumbering.swift */; };
+		7DB7C0B805234A1B6D8AD157 /* CatalogModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F8026D0A919C223BC3548A /* CatalogModels.swift */; };
+		851D8F6683D61940394B6576 /* TorBoxLibraryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D031C72B85A77D9AAD109669 /* TorBoxLibraryApp.swift */; };
+		882B536452F325F0A09DAF3F /* EntryEditorFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A6556120E14050DD407EDF /* EntryEditorFields.swift */; };
+		8AC3A84C5155B4A042B1E178 /* OverrideJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A4339E1E3C49B49B8300A8 /* OverrideJSON.swift */; };
+		A27ECECF41081EE780814FB7 /* EntryDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD5B0871F8513C5C49E39DC /* EntryDraft.swift */; };
+		BF5BC03AF9A016F0CAA45D55 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC2EB328414A76044849392 /* LibraryView.swift */; };
+		BF9CA0EBC4B2FC57B0C2CEEF /* CinemaTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B047344CC9FC00558172B30 /* CinemaTheme.swift */; };
+		DEBBE9A6047979A07BCB8ADB /* CatalogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10F3F3BEE2535EDEC5E92FB /* CatalogStore.swift */; };
+		E47F7F0450BF2D1975FEF95F /* DemoSeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B8BA5275F7C50F4C904AB8 /* DemoSeed.swift */; };
+		F159B21403B721C33D8A22B6 /* LibraryControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D361426FBA002D2635D007D /* LibraryControls.swift */; };
+		F35FC5389C0684208459065C /* PosterCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D043D4742C9565E67671C8 /* PosterCache.swift */; };
+		F4678E9E9B2DE6E50C9375B7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81983F3992BEA175CF8D7711 /* LaunchScreen.storyboard */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		05F8026D0A919C223BC3548A /* CatalogModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogModels.swift; sourceTree = "<group>"; };
+		18D043D4742C9565E67671C8 /* PosterCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterCache.swift; sourceTree = "<group>"; };
+		283B728AEC656283D330BA9E /* LocalEntryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalEntryEditor.swift; sourceTree = "<group>"; };
+		30DF3101A4B5F0E7E20FFD22 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
+		41A4339E1E3C49B49B8300A8 /* OverrideJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverrideJSON.swift; sourceTree = "<group>"; };
+		4B047344CC9FC00558172B30 /* CinemaTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CinemaTheme.swift; sourceTree = "<group>"; };
+		512FF4606E4681BFC205C728 /* TitleGrouper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleGrouper.swift; sourceTree = "<group>"; };
+		7270EAC2E392434E282FFB47 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		76B8BA5275F7C50F4C904AB8 /* DemoSeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSeed.swift; sourceTree = "<group>"; };
+		7D361426FBA002D2635D007D /* LibraryControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryControls.swift; sourceTree = "<group>"; };
+		8BF272B595CA57FCACAB39B7 /* PosterCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterCard.swift; sourceTree = "<group>"; };
+		A2A8B87592A5C8E38FE43F08 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		ADD5B0871F8513C5C49E39DC /* EntryDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryDraft.swift; sourceTree = "<group>"; };
+		BBC2EB328414A76044849392 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		BCF157C11027E21D34DAC30E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BF1402D6650117C161EB2901 /* TorBoxLibraryManager.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TorBoxLibraryManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D031C72B85A77D9AAD109669 /* TorBoxLibraryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorBoxLibraryApp.swift; sourceTree = "<group>"; };
+		D37516D69E188F3B4B00E90D /* EpisodeNumbering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeNumbering.swift; sourceTree = "<group>"; };
+		E10F3F3BEE2535EDEC5E92FB /* CatalogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogStore.swift; sourceTree = "<group>"; };
+		E2A6556120E14050DD407EDF /* EntryEditorFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryEditorFields.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		26B63DD97EFE2E2659DC9C9D = {
+			isa = PBXGroup;
+			children = (
+				65CADC5200F9B2D17F76C723 /* TorBoxLibraryManager */,
+				29CCE45E208DAA1A9F9D4446 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		29CCE45E208DAA1A9F9D4446 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BF1402D6650117C161EB2901 /* TorBoxLibraryManager.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		48F92B9354ADB411B1DD0E5A /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D37516D69E188F3B4B00E90D /* EpisodeNumbering.swift */,
+				41A4339E1E3C49B49B8300A8 /* OverrideJSON.swift */,
+				18D043D4742C9565E67671C8 /* PosterCache.swift */,
+				512FF4606E4681BFC205C728 /* TitleGrouper.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		57C742CBD88FB3A8426077EE /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				ADD5B0871F8513C5C49E39DC /* EntryDraft.swift */,
+				E2A6556120E14050DD407EDF /* EntryEditorFields.swift */,
+				7D361426FBA002D2635D007D /* LibraryControls.swift */,
+				30DF3101A4B5F0E7E20FFD22 /* LibraryModel.swift */,
+				BBC2EB328414A76044849392 /* LibraryView.swift */,
+				283B728AEC656283D330BA9E /* LocalEntryEditor.swift */,
+				8BF272B595CA57FCACAB39B7 /* PosterCard.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		65BE235E515E016897EEDA90 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				05F8026D0A919C223BC3548A /* CatalogModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		65CADC5200F9B2D17F76C723 /* TorBoxLibraryManager */ = {
+			isa = PBXGroup;
+			children = (
+				7270EAC2E392434E282FFB47 /* Assets.xcassets */,
+				BCF157C11027E21D34DAC30E /* Info.plist */,
+				8BBC08BEC8724FD20603AF32 /* App */,
+				76947C6044F41A6B577E1658 /* Design */,
+				F786CB6021B35CCF6DDA0CD1 /* Features */,
+				81983F3992BEA175CF8D7711 /* LaunchScreen.storyboard */,
+				65BE235E515E016897EEDA90 /* Models */,
+				733163096BC1CE8CAFD1FF32 /* Persistence */,
+				48F92B9354ADB411B1DD0E5A /* Services */,
+			);
+			path = TorBoxLibraryManager;
+			sourceTree = "<group>";
+		};
+		733163096BC1CE8CAFD1FF32 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				E10F3F3BEE2535EDEC5E92FB /* CatalogStore.swift */,
+				76B8BA5275F7C50F4C904AB8 /* DemoSeed.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		76947C6044F41A6B577E1658 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				4B047344CC9FC00558172B30 /* CinemaTheme.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		8BBC08BEC8724FD20603AF32 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				D031C72B85A77D9AAD109669 /* TorBoxLibraryApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		F786CB6021B35CCF6DDA0CD1 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				57C742CBD88FB3A8426077EE /* Library */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BAA751581F839F7DFB4752B4 /* TorBoxLibraryManager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 733B89FE74354D4F14F317BD /* Build configuration list for PBXNativeTarget "TorBoxLibraryManager" */;
+			buildPhases = (
+				AF1FE967E6FA260CB3BF3A0A /* Sources */,
+				95F552385AD8C79765A159A9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TorBoxLibraryManager;
+			packageProductDependencies = (
+			);
+			productName = TorBoxLibraryManager;
+			productReference = BF1402D6650117C161EB2901 /* TorBoxLibraryManager.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0FBBCB00F59083DA5786DB9C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 2624CBCF99192AFDEDA8478B /* Build configuration list for PBXProject "TorBoxLibraryManager" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 26B63DD97EFE2E2659DC9C9D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 29CCE45E208DAA1A9F9D4446 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BAA751581F839F7DFB4752B4 /* TorBoxLibraryManager */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		95F552385AD8C79765A159A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3ED4987437D17140B49E7A46 /* Assets.xcassets in Resources */,
+				F4678E9E9B2DE6E50C9375B7 /* LaunchScreen.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AF1FE967E6FA260CB3BF3A0A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7DB7C0B805234A1B6D8AD157 /* CatalogModels.swift in Sources */,
+				DEBBE9A6047979A07BCB8ADB /* CatalogStore.swift in Sources */,
+				BF9CA0EBC4B2FC57B0C2CEEF /* CinemaTheme.swift in Sources */,
+				E47F7F0450BF2D1975FEF95F /* DemoSeed.swift in Sources */,
+				A27ECECF41081EE780814FB7 /* EntryDraft.swift in Sources */,
+				882B536452F325F0A09DAF3F /* EntryEditorFields.swift in Sources */,
+				627D9D5E088D2365FE89F31F /* EpisodeNumbering.swift in Sources */,
+				F159B21403B721C33D8A22B6 /* LibraryControls.swift in Sources */,
+				3641C4FA0026DC05A94DA6FD /* LibraryModel.swift in Sources */,
+				BF5BC03AF9A016F0CAA45D55 /* LibraryView.swift in Sources */,
+				16843DF7114C7F25485F2A21 /* LocalEntryEditor.swift in Sources */,
+				8AC3A84C5155B4A042B1E178 /* OverrideJSON.swift in Sources */,
+				F35FC5389C0684208459065C /* PosterCache.swift in Sources */,
+				59CBA13C5B6353AC668DBA7D /* PosterCard.swift in Sources */,
+				4103BDE7687F6A4994528584 /* TitleGrouper.swift in Sources */,
+				851D8F6683D61940394B6576 /* TorBoxLibraryApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		81983F3992BEA175CF8D7711 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A2A8B87592A5C8E38FE43F08 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		11B1E6E949F4A7B9AF757CEB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = TorBoxLibraryManager/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.superapp.torboxlibrarymanagerrpet2;
+			};
+			name = Debug;
+		};
+		3B8968BD3DE1A593207DF44D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = TorBoxLibraryManager;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B49704E811525394F46B78E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = TorBoxLibraryManager/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.superapp.torboxlibrarymanagerrpet2;
+			};
+			name = Release;
+		};
+		D4C0B6B9DE7860F561012E01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_NS_ASSERTIONS = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = TorBoxLibraryManager;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2624CBCF99192AFDEDA8478B /* Build configuration list for PBXProject "TorBoxLibraryManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B8968BD3DE1A593207DF44D /* Debug */,
+				D4C0B6B9DE7860F561012E01 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		733B89FE74354D4F14F317BD /* Build configuration list for PBXNativeTarget "TorBoxLibraryManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				11B1E6E949F4A7B9AF757CEB /* Debug */,
+				B49704E811525394F46B78E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0FBBCB00F59083DA5786DB9C /* Project object */;
+}
