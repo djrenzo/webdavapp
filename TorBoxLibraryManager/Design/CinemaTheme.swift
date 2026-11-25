@@ -7,5 +7,6 @@ enum CinemaTheme {
     static let blue = Color(red: 91 / 255, green: 135 / 255, blue: 255 / 255)
     static let text = Color(red: 245 / 255, green: 247 / 255, blue: 250 / 255)
     static let secondary = Color(red: 148 / 255, green: 158 / 255, blue: 174 / 255)
+    static let green = Color(red: 72 / 255, green: 199 / 255, blue: 116 / 255)
     static let amber = Color(red: 1, green: 179 / 255, blue: 77 / 255)
 }

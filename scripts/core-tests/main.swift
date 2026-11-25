@@ -102,5 +102,59 @@ check(rows.rows["tvshow:tmdb:1"]?["title"] == "Manual Title" && rows.rows["tvsho
 check(rows.folderKeys["c"] == nil && rows.folderKeys.count == 2, "folder keys")
 check(Push.nowISO().count == 27, "iso \(Push.nowISO())")
 
+// Subtitles: the addon's `subs` format and how it attaches files to episodes.
+let showEntry: JSONObject = ["title": "Game of Thrones", "type": "tvshow", "tmdb_id": "1399", "source": "auto", "subs": .array([
+    .object(["url": "https://subs5.strem.io/x/file/1", "fileName": "Game of Thrones.S01E02.es.srt", "language": "es", "hi": false]),
+    .object(["url": "https://subs5.strem.io/x/file/2", "fileName": "Game of Thrones.S01E02.en.srt", "language": "en", "hi": true, "fps_from": .double(23.976), "fps_to": 25, "shift_ms": -500]),
+    .object(["url": "https://subs5.strem.io/x/file/3", "fileName": "Game of Thrones.S01E03.sp.srt", "language": "sp"]),
+    .object(["url": "", "fileName": "broken.srt"]),
+    .object(["url": "https://x/4", "fileName": "no-extension"]),
+])]
+let ep2 = SubtitleEntries.saved(showEntry, episode: EpisodeKey(season: 1, episode: 2))
+check(ep2.map(\.language) == ["es", "en"] && ep2[1].hearingImpaired && ep2[1].adjustments == "23.976 → 25 fps · -500 ms", "subs for episode \(ep2)")
+check(SubtitleEntries.saved(showEntry).count == 3, "valid subs only")
+check(SubtitleLanguages.name("sp") == "Spanish" && SubtitleLanguages.find(legacy: "pob")?.code == "pt-BR", "languages")
+check(SubtitleEntries.fileName(for: showEntry, episode: EpisodeKey(season: 1, episode: 2), language: "nl") == "Game of Thrones.S01E02.nl.srt", "episode file name")
+let movieEntry: JSONObject = ["title": "Mission: Impossible?", "year": 1996, "type": "movie", "tmdb_id": "954"]
+check(SubtitleEntries.fileName(for: movieEntry, episode: nil, language: "en") == "Mission - Impossible (1996) {tmdb-954}.en.srt", "movie file name \(SubtitleEntries.fileName(for: movieEntry, episode: nil, language: "en"))")
+let replaced = SubtitleEntries.adding(["url": "https://new", "fileName": "Game of Thrones.S01E02.es.srt", "language": "es", "hi": false], to: showEntry)
+let replacedSubs = SubtitleEntries.saved(replaced, episode: EpisodeKey(season: 1, episode: 2))
+check(replacedSubs.map(\.url) == ["https://subs5.strem.io/x/file/2", "https://new"] && replaced["title"] == "Game of Thrones", "add replaces same language \(replacedSubs)")
+let removed = SubtitleEntries.removing(url: "https://subs5.strem.io/x/file/2", from: replaced)
+check(SubtitleEntries.saved(removed).map(\.url) == ["https://subs5.strem.io/x/file/3", "https://new"], "remove")
+check(SubtitleEntries.active(ep2).count == 2, "active per language")
+
+// Completeness: aired from TMDB details vs. files present.
+let tvDetails = try! JSONCoding.decodeObject(Data(#"{"status":"Returning Series","last_episode_to_air":{"season_number":3,"episode_number":4},"seasons":[{"season_number":0,"episode_count":5},{"season_number":1,"episode_count":10},{"season_number":2,"episode_count":8},{"season_number":3,"episode_count":10},{"season_number":4,"episode_count":0}]}"#.utf8))
+let aired = AiredEpisodes.from(details: tvDetails)
+check(aired.seasons == [1: 10, 2: 8, 3: 4] && aired.keys.count == 22 && aired.keys.first == EpisodeKey(season: 1, episode: 1), "aired \(aired.seasons)")
+var present = Set((1...10).map { EpisodeKey(season: 1, episode: $0) })
+present.formUnion([1, 2, 3, 5, 6].map { EpisodeKey(season: 2, episode: $0) })
+let report = CompletenessReport.make(aired: aired, present: present)
+check(report.missingSeasons == [3] && report.missingEpisodes[2] == [4, 7, 8] && report.missingCount == 7 && !report.isComplete, "report \(report)")
+check(report.lines.map(\.text) == ["E4, E7–E8", "all 4 episodes"], "lines \(report.lines.map(\.text))")
+check(CompletenessReport.ranges([9, 1, 2, 3, 5]) == "E1–E3, E5, E9", "ranges")
+present.formUnion([4, 7, 8].map { EpisodeKey(season: 2, episode: $0) })
+present.formUnion((1...4).map { EpisodeKey(season: 3, episode: $0) })
+check(CompletenessReport.make(aired: aired, present: present).isComplete, "complete")
+check(!CompletenessReport.make(aired: AiredEpisodes(seasons: [:], status: nil, fetchedAt: Date()), present: present).isComplete, "nothing aired is not complete")
+
+// Trakt parsing, bodies and Keep going.
+let traktShows = try! JSONDecoder().decode(JSONValue.self, from: Data(#"[{"last_watched_at":"2026-11-20T20:00:00.000Z","show":{"title":"GoT","ids":{"trakt":1390,"tmdb":1399,"imdb":"tt0944947"}},"seasons":[{"number":1,"episodes":[{"number":1,"last_watched_at":"2026-11-01T20:00:00.000Z"},{"number":2,"last_watched_at":"2026-11-02T20:00:00Z"},{"number":4,"last_watched_at":"2026-11-20T20:00:00.000Z"},{"number":5,"last_watched_at":"2026-10-01T20:00:00.000Z"}]}]}]"#.utf8))
+let traktPlayback = try! JSONDecoder().decode(JSONValue.self, from: Data(#"[{"id":7,"progress":42.5,"paused_at":"2026-11-21T10:00:00.000Z","type":"episode","episode":{"season":1,"number":6,"title":"A Golden Crown"},"show":{"title":"GoT","ids":{"tmdb":1399}}},{"id":8,"progress":10,"paused_at":"2026-11-22T10:00:00.000Z","type":"movie","movie":{"title":"Heat","ids":{"tmdb":949,"imdb":"tt0113277"}}}]"#.utf8))
+let traktState = TraktParser.state(settings: ["user": .object(["username": "me"])], movies: [], shows: traktShows.arrayValue!, playback: traktPlayback.arrayValue!)
+let got = traktState.show(tmdbID: "1399", imdbID: nil)!
+check(traktState.username == "me" && got.episodes.count == 4 && got.lastEpisode?.key == EpisodeKey(season: 1, episode: 4), "trakt shows \(got)")
+check(traktState.playback.map(\.id) == [8, 7] && traktState.playback[1].episode == EpisodeKey(season: 1, episode: 6) && traktState.playback[0].isMovie, "playback")
+check(traktState.show(tmdbID: nil, imdbID: "TT0944947") != nil, "imdb fallback")
+let order = (1...10).map { EpisodeKey(season: 1, episode: $0) } + [EpisodeKey(season: 2, episode: 1)]
+let libraryEpisodes = Set([5, 6, 7].map { EpisodeKey(season: 1, episode: $0) })
+// Last watched is E4 (most recent); E5 is already watched, so E6 is next and is in the library.
+check(UpNext.pick(watched: got, order: order, present: libraryEpisodes) == UpNext.Pick(next: EpisodeKey(season: 1, episode: 6), last: EpisodeKey(season: 1, episode: 4), inLibrary: true), "up next")
+check(UpNext.pick(watched: got, order: [], present: [EpisodeKey(season: 1, episode: 3)]) == nil, "nothing after last")
+check(UpNext.pick(watched: got, order: order, present: [])?.inLibrary == false, "next not in library")
+let body = TraktParser.showBody(TraktIDs(tmdb: 1399), episodes: [EpisodeKey(season: 1, episode: 2), EpisodeKey(season: 1, episode: 1), EpisodeKey(season: 2, episode: 1)], seasons: [2])
+check(String(decoding: try! JSONCoding.encode(.object(body)), as: UTF8.self) == #"{"shows":[{"ids":{"tmdb":1399},"seasons":[{"number":2},{"episodes":[{"number":1},{"number":2}],"number":1}]}]}"#, "history body \(String(decoding: try! JSONCoding.encode(.object(body)), as: UTF8.self))")
+
 print("\(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

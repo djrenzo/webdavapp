@@ -3,14 +3,22 @@ import SwiftUI
 struct LibraryView: View {
     @Bindable var model: AppModel
     @Environment(\.dynamicTypeSize) private var typeSize
+    @State private var path: [String] = []
+
+    private var isFiltering: Bool {
+        !model.search.isEmpty || model.filter != .all || model.accountFilter != nil
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             GeometryReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         RefreshStatusView(model: model)
                         banners
+                        if !isFiltering {
+                            WatchingRows(model: model) { path.append($0) }
+                        }
                         LibraryControls(model: model)
                         gallery(width: proxy.size.width)
                         footer
@@ -20,7 +28,10 @@ struct LibraryView: View {
                     .padding(.bottom, 28)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .refreshable { await model.refresh() }
+                .refreshable {
+                    model.refresh()
+                    await model.syncTrakt(force: true)
+                }
             }
             .background(CinemaTheme.background)
             .navigationTitle("Library")
@@ -101,7 +112,7 @@ struct LibraryView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
                 ForEach(model.visibleTitles) { item in
                     NavigationLink(value: item.id) {
-                        PosterCard(item: item)
+                        PosterCard(item: item, report: model.completeness[item.id], watched: model.isWatched(item))
                     }
                     .buttonStyle(.plain)
                 }

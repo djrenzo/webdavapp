@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 /// §9.7.
@@ -15,6 +16,14 @@ struct SettingsView: View {
     @State private var showImporter = false
     @State private var confirmClear = false
     @State private var loaded = false
+    @State private var subtitleKey = Secrets.openSubtitlesKey() ?? ""
+    @State private var subtitleStatus: String?
+    @State private var subtitleOK = false
+    @State private var showLanguages = false
+    @State private var subtitleLanguages: Set<String> = []
+    @State private var traktID = ""
+    @State private var traktSecret = ""
+    @State private var showTraktConnect = false
 
     var body: some View {
         NavigationStack {
@@ -26,6 +35,8 @@ struct SettingsView: View {
                 }
                 tmdbSection
                 supabaseSection
+                subtitlesSection
+                traktSection
                 if !model.snapshot.conflicts.isEmpty {
                     Section {
                         NavigationLink("Review \(model.snapshot.conflicts.count) differing overrides") {
@@ -48,6 +59,10 @@ struct SettingsView: View {
             .background(CinemaTheme.background)
             .navigationTitle("Settings")
             .onAppear(perform: load)
+            .sheet(isPresented: $showLanguages, onDismiss: { model.subtitleLanguages = subtitleLanguages.sorted() }) {
+                LanguagePicker(selection: $subtitleLanguages)
+            }
+            .sheet(isPresented: $showTraktConnect) { TraktConnectView(model: model) }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
                 if case .success(let url) = result { Task { await model.importOverrides(from: url) } }
             }
@@ -65,6 +80,102 @@ struct SettingsView: View {
         supabaseURL = model.settings.supabaseURL
         supabaseKey = model.settings.supabaseKey
         supabaseEmail = model.settings.supabaseEmail
+        subtitleLanguages = Set(model.subtitleLanguages)
+        traktID = model.traktClientID
+        traktSecret = Secrets.traktSecret() ?? ""
+    }
+
+    // MARK: Subtitles
+
+    private var subtitlesSection: some View {
+        Section {
+            SecureField("OpenSubtitles API key", text: $subtitleKey)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            HStack {
+                Button("Save & test") {
+                    let key = subtitleKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                    Secrets.setOpenSubtitlesKey(key.isEmpty ? nil : key)
+                    Task { await testSubtitleKey(key) }
+                }
+                Spacer()
+                if let subtitleStatus {
+                    Text(subtitleStatus).font(.caption).foregroundStyle(subtitleOK ? CinemaTheme.blue : CinemaTheme.amber)
+                }
+            }
+            Button { showLanguages = true } label: {
+                LabeledContent("Languages", value: subtitleLanguages.sorted().map(SubtitleLanguages.name).joined(separator: ", "))
+            }
+            .foregroundStyle(CinemaTheme.text)
+        } header: {
+            Text("Subtitles")
+        } footer: {
+            Text("opensubtitles.com → Profile → API consumers → New consumer. Without a key, searches use the free OpenSubtitles mirror only. Subtitles are saved with permanent links, so Kodi can use them too.")
+        }
+        .listRowBackground(CinemaTheme.surface)
+    }
+
+    private func testSubtitleKey(_ key: String) async {
+        guard !key.isEmpty else {
+            subtitleOK = true
+            subtitleStatus = "Key removed"
+            return
+        }
+        do {
+            try await OpenSubtitlesClient(apiKey: key).test()
+            subtitleOK = true
+            subtitleStatus = "Key works"
+        } catch {
+            subtitleOK = false
+            subtitleStatus = error.localizedDescription
+        }
+    }
+
+    // MARK: Trakt
+
+    private var traktSection: some View {
+        Section {
+            if model.isTraktConnected {
+                LabeledContent("Connected", value: model.trakt.username ?? "Trakt")
+                if let synced = model.trakt.syncedAt {
+                    LabeledContent("Last sync", value: synced.formatted(.relative(presentation: .named)))
+                }
+                LabeledContent("Watched", value: "\(model.trakt.movies.count) movies · \(model.trakt.shows.count) shows")
+                if let error = model.traktError {
+                    Label(error, systemImage: "exclamationmark.triangle.fill").font(.caption).foregroundStyle(CinemaTheme.amber)
+                }
+                Button {
+                    Task { await model.syncTrakt(force: true) }
+                } label: {
+                    HStack {
+                        Text("Sync now")
+                        if model.isSyncingTrakt { Spacer(); ProgressView() }
+                    }
+                }
+                .disabled(model.isSyncingTrakt)
+                Button("Disconnect", role: .destructive) { Task { await model.disconnectTrakt() } }
+            } else {
+                TextField("Client ID", text: $traktID)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                SecureField("Client Secret", text: $traktSecret)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Connect Trakt") {
+                    model.traktClientID = traktID
+                    Secrets.setTraktSecret(traktSecret.trimmingCharacters(in: .whitespacesAndNewlines))
+                    showTraktConnect = true
+                }
+                .disabled(traktID.trimmingCharacters(in: .whitespaces).isEmpty || traktSecret.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        } header: {
+            Text("Trakt")
+        } footer: {
+            Text(model.isTraktConnected
+                 ? "Watched movies and episodes, Continue watching and Keep going come from Trakt. Connect Infuse to Trakt too, so what you play there is tracked."
+                 : "Create an app at trakt.tv/oauth/applications with redirect URI urn:ietf:wg:oauth:2.0:oob, then paste its Client ID and Secret here.")
+        }
+        .listRowBackground(CinemaTheme.surface)
     }
 
     // MARK: TMDB
@@ -78,7 +189,10 @@ struct SettingsView: View {
             HStack {
                 Button("Save & test") {
                     saveToken()
-                    Task { await testToken() }
+                    Task {
+                        await testToken()
+                        if tmdbOK { await model.loadAiredEpisodes() }
+                    }
                 }
                 .disabled(tmdbToken.trimmingCharacters(in: .whitespaces).isEmpty)
                 Spacer()
@@ -275,5 +389,74 @@ struct PushSummaryView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .preferredColorScheme(.dark)
+    }
+}
+
+/// Trakt device sign-in: show the code, open trakt.tv/activate, wait for approval.
+struct TraktConnectView: View {
+    let model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var code: TraktDeviceCode?
+    @State private var error: String?
+    @State private var task: Task<Void, Never>?
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 22) {
+                if let code {
+                    Text("Enter this code on trakt.tv").font(.headline)
+                    Text(code.userCode)
+                        .font(.system(size: 40, weight: .bold, design: .monospaced))
+                        .textSelection(.enabled)
+                    Button("Copy code & open Trakt") {
+                        UIPasteboard.general.string = code.userCode
+                        if let url = URL(string: code.verificationURL) { openURL(url) }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Waiting for approval…").font(.footnote).foregroundStyle(CinemaTheme.secondary)
+                    }
+                } else if let error {
+                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(CinemaTheme.amber)
+                    Button("Try again") { start() }.buttonStyle(.bordered)
+                } else {
+                    ProgressView("Asking Trakt for a code…")
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(CinemaTheme.background)
+            .navigationTitle("Connect Trakt")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .onAppear(perform: start)
+            .onDisappear { task?.cancel() }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func start() {
+        task?.cancel()
+        code = nil
+        error = nil
+        task = Task {
+            guard let client = TraktClient.configured() else {
+                error = TraktError.notConfigured.localizedDescription
+                return
+            }
+            do {
+                let deviceCode = try await client.deviceCode()
+                code = deviceCode
+                _ = try await client.waitForToken(deviceCode)
+                await model.traktDidConnect()
+                dismiss()
+            } catch is CancellationError {
+            } catch {
+                self.error = error.localizedDescription
+                code = nil
+            }
+        }
     }
 }

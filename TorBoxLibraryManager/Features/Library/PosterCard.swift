@@ -2,16 +2,21 @@ import SwiftUI
 
 struct PosterCard: View {
     let item: GalleryTitle
+    var report: CompletenessReport? = nil
+    var watched = false
     @ScaledMetric(relativeTo: .subheadline) private var captionHeight = 34.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             PosterArtwork(url: item.posterURL, title: item.title, isMovie: item.isMovie)
                 .overlay(alignment: .bottomLeading) { badges.padding(6) }
+                .overlay(alignment: .topTrailing) { cornerBadge.padding(6) }
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
+                    // Green: every aired episode is in the library.
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(.white.opacity(0.12), lineWidth: 0.75)
+                        .strokeBorder(report?.isComplete == true ? CinemaTheme.green : .white.opacity(0.12),
+                                      lineWidth: report?.isComplete == true ? 2.5 : 0.75)
                 }
             Text(item.title)
                 .font(.subheadline.weight(.medium))
@@ -31,7 +36,30 @@ struct PosterCard: View {
         let year = item.year.map { ", \($0)" } ?? ""
         let accounts = item.accountIDs.count > 1 ? ", \(item.accountIDs.count) accounts" : ""
         let seasons = item.episodesNeedingSeason > 0 ? ", \(item.episodesNeedingSeason) episodes need a season" : ""
-        return item.title + year + accounts + seasons
+        var status = ""
+        if let report {
+            if report.isComplete { status = ", all episodes present" } else if report.missingCount > 0 { status = ", \(report.missingCount) episodes missing" }
+        }
+        let seen = watched ? ", watched" : ""
+        return item.title + year + accounts + seasons + status + seen
+    }
+
+    @ViewBuilder private var cornerBadge: some View {
+        if let report, report.missingCount > 0 {
+            HStack(spacing: 3) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                Text("\(report.missingCount)")
+            }
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(CinemaTheme.background)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(CinemaTheme.amber, in: Capsule())
+        } else if watched {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.body)
+                .foregroundStyle(.white, CinemaTheme.green)
+        }
     }
 
     private var badges: some View {

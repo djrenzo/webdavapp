@@ -102,6 +102,7 @@ struct GalleryTitle: Sendable, Identifiable {
     let posterURL: URL?
     let plot: String?
     let tmdbID: String?
+    var imdbID: String? = nil
     let folders: [GalleryFolder]
     let latestSeen: Date
 
@@ -110,6 +111,31 @@ struct GalleryTitle: Sendable, Identifiable {
     var fileCount: Int { folders.reduce(0) { $0 + $1.files.count } }
     var episodesNeedingSeason: Int { folders.reduce(0) { $0 + $1.episodesNeedingSeason } }
     var searchText: String { ([title] + folders.map(\.name)).joined(separator: " ") }
+
+    /// Episodes with a file, specials included.
+    var presentEpisodes: Set<EpisodeKey> { Set(folders.flatMap { $0.files.compactMap(\.number.key) }) }
+
+    /// The main file of a movie (the first folder's).
+    var mainFile: GalleryFile? {
+        let files = folders.flatMap(\.files)
+        return files.first(where: \.isMain) ?? files.max { $0.size < $1.size }
+    }
+
+    /// The file for an episode, and the folder it is in.
+    func file(for episode: EpisodeKey) -> (file: GalleryFile, folder: GalleryFolder)? {
+        for folder in folders {
+            if let file = folder.files.filter({ $0.number.key == episode }).max(by: { $0.size < $1.size }) {
+                return (file, folder)
+            }
+        }
+        return nil
+    }
+
+    func folder(containing file: GalleryFile) -> GalleryFolder? {
+        folders.first { $0.files.contains { $0.id == file.id } }
+    }
+
+    var traktIDs: TraktIDs { TraktIDs(tmdb: tmdbID.flatMap { Int($0) }, imdb: imdbID) }
 }
 
 struct UnidentifiedFolder: Sendable, Identifiable {

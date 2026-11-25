@@ -75,6 +75,8 @@ struct RootView: View {
                 await newModel.reload()
                 await newModel.checkSupabase()
                 KeepAlive.schedule()
+                await newModel.syncTrakt()
+                await newModel.loadAiredEpisodes()
             }
         } catch {
             startupError = error.localizedDescription
@@ -84,6 +86,7 @@ struct RootView: View {
 
 struct MainTabView: View {
     @Bindable var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView {
@@ -114,6 +117,10 @@ struct MainTabView: View {
         }
         .sheet(item: $model.pushSummary) { summary in
             PushSummaryView(summary: summary)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Back from Infuse/VLC: pick up what was watched (throttled to every 2 minutes).
+            if phase == .active { Task { await model.syncTrakt() } }
         }
     }
 

@@ -50,6 +50,20 @@ struct PushSummary: Identifiable {
     var pushSummary: PushSummary?
     private var staleContinuation: CheckedContinuation<Bool, Never>?
 
+    // Completeness (by TMDB show id / by title id). See AppModel+Watching.swift.
+    var aired: [String: AiredEpisodes] = [:]
+    var completeness: [String: CompletenessReport] = [:]
+    var isLoadingAired = false
+
+    // Trakt. See AppModel+Watching.swift.
+    var trakt = LocalFile.load(TraktState.self, TraktState.fileName) ?? TraktState()
+    var isTraktConnected = TraktToken.load() != nil
+    var isSyncingTrakt = false
+    var traktError: String?
+    var lastTraktSync: Date?
+    var continueWatching: [WatchingItem] = []
+    var keepGoing: [WatchingItem] = []
+
     init(store: CatalogStore) {
         self.store = store
         role = settings.supabaseConfig == nil ? .notConfigured : .signedOut
@@ -61,6 +75,7 @@ struct PushSummary: Identifiable {
         snapshot = await store.snapshot()
         isLoaded = true
         updateVisibleTitles()
+        await libraryChanged()
     }
 
     func clearFilters() {
@@ -143,7 +158,11 @@ struct PushSummary: Identifiable {
         isRefreshing = false
         progress = nil
         refreshTask = nil
-        Task { await reload() }
+        Task {
+            await reload()
+            await loadAiredEpisodes()
+            await syncTrakt()
+        }
         guard let result else { return }
         if result.role != .notConfigured { role = result.role }
         lastWarnings = result.warnings
@@ -318,6 +337,8 @@ struct PushSummary: Identifiable {
             try await store.clearListings()
             URLCache.shared.removeAllCachedResponses()
             await PosterCache.shared.clear()
+            await AiredEpisodeCache.shared.clear()
+            aired = [:]
             await reload()
             noticeMessage = "Local listings and poster cache cleared. Pull to refresh to list your accounts again."
         } catch {

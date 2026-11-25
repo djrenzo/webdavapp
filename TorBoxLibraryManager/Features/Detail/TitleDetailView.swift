@@ -10,6 +10,8 @@ struct TitleDetailView: View {
     @State private var showFixMatch = false
     @State private var showSetSeason = false
     @State private var showFolders = false
+    @State private var subtitleFile: SubtitleTargetRef?
+    @State private var showSubtitleOverview = false
 
     private var item: GalleryTitle? { model.snapshot.titles.first { $0.id == titleID } }
 
@@ -33,6 +35,9 @@ struct TitleDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header(item)
+                if !item.isMovie, let report = model.completeness[item.id] {
+                    MissingEpisodesPanel(report: report)
+                }
                 if item.isMovie {
                     movieFiles(item)
                 } else {
@@ -54,6 +59,8 @@ struct TitleDetailView: View {
         .sheet(isPresented: $showFixMatch) { FixMatchView(model: model, folders: item.folders) }
         .sheet(isPresented: $showSetSeason) { SetSeasonView(model: model, folders: item.folders) }
         .sheet(isPresented: $showFolders) { FoldersSheet(item: item) }
+        .sheet(item: $subtitleFile) { ref in SubtitleManagerView(model: model, titleID: item.id, fileID: ref.file.id) }
+        .sheet(isPresented: $showSubtitleOverview) { SubtitleOverviewView(model: model, titleID: item.id) }
     }
 
     // MARK: Header
@@ -118,6 +125,9 @@ struct TitleDetailView: View {
     @ViewBuilder private func badges(_ item: GalleryTitle) -> some View {
         let manual = item.folders.contains { Overrides.isManual($0.entry) }
         HStack(spacing: 8) {
+            if model.isWatched(item) {
+                capsule("Watched", color: CinemaTheme.green)
+            }
             capsule(manual ? "Manual match" : "Automatic match", color: manual ? CinemaTheme.blue : CinemaTheme.secondary)
             if item.accountIDs.count > 1 { capsule("\(item.accountIDs.count) accounts", color: CinemaTheme.secondary) }
             if item.episodesNeedingSeason > 0 {
@@ -147,7 +157,7 @@ struct TitleDetailView: View {
                     folderHeader(folder)
                     let files = folder.files.sorted { ($0.isMain ? 0 : 1, $0.name) < ($1.isMain ? 0 : 1, $1.name) }
                     ForEach(files) { file in
-                        fileRow(file, title: file.isMain ? "Main file" : file.name, subtitle: file.isMain ? "\(file.name) · \(file.sizeLabel)" : file.sizeLabel)
+                        fileRow(file, title: file.isMain ? "Main file" : file.name, subtitle: file.isMain ? "\(file.name) · \(file.sizeLabel)" : file.sizeLabel, item: item)
                     }
                 }
             }
@@ -172,6 +182,7 @@ struct TitleDetailView: View {
         let season = selectedSeason.flatMap { seasons.contains($0) ? $0 : nil } ?? seasons.first
         let episodes = numbered.filter { $0.number.season == season }
             .sorted { ($0.number.episode ?? 0, $0.name) < ($1.number.episode ?? 0, $1.name) }
+        let watched = model.watchedEpisodes(item)
 
         return VStack(alignment: .leading, spacing: 14) {
             if seasons.count > 1 {
@@ -193,13 +204,16 @@ struct TitleDetailView: View {
             } else if let season {
                 Text(season == 0 ? "Specials" : "Season \(season)").font(.headline)
             }
+            if let season, model.isTraktConnected {
+                seasonWatchBar(item, season: season, episodes: episodes)
+            }
             ForEach(episodes) { file in
-                episodeRow(file, season: season)
+                episodeRow(file, season: season, item: item, watched: watched)
             }
             if !extras.isEmpty {
                 Text("Extras").font(.headline).padding(.top, 8)
                 ForEach(extras) { file in
-                    fileRow(file, title: file.name, subtitle: file.number.needsSeason ? "Episode \(file.number.episode ?? 0) · season needed · \(file.sizeLabel)" : file.sizeLabel)
+                    fileRow(file, title: file.name, subtitle: file.number.needsSeason ? "Episode \(file.number.episode ?? 0) · season needed · \(file.sizeLabel)" : file.sizeLabel, item: nil)
                 }
             }
             if files.isEmpty {
@@ -209,8 +223,28 @@ struct TitleDetailView: View {
         .padding(.horizontal, 16)
     }
 
-    private func episodeRow(_ file: GalleryFile, season: Int?) -> some View {
+    private func seasonWatchBar(_ item: GalleryTitle, season: Int, episodes: [GalleryFile]) -> some View {
+        let watched = model.watchedEpisodes(item)
+        let keys = episodes.compactMap(\.number.key)
+        let seen = keys.filter { watched.contains($0) }.count
+        let all = !keys.isEmpty && seen == keys.count
+        return HStack {
+            Text("\(seen) of \(keys.count) watched").font(.caption).foregroundStyle(CinemaTheme.secondary)
+            Spacer()
+            Button(all ? "Mark season unwatched" : "Mark season watched") {
+                Task { await model.setWatched(show: item, seasons: [season], !all) }
+            }
+            .font(.caption.weight(.medium))
+            .disabled(model.isSyncingTrakt)
+        }
+    }
+
+    private func episodeRow(_ file: GalleryFile, season: Int?, item: GalleryTitle, watched: Set<EpisodeKey>) -> some View {
         let info = season.flatMap { metadata?.episodes[$0]?[file.number.episode ?? -1] }
+        let key = file.number.key
+        let isWatched = key.map { watched.contains($0) } ?? false
+        let paused = key.flatMap { model.playback(item, episode: $0) }
+        let subs = SubtitleEntries.active(model.subtitles(for: file, in: item))
         return Button { playFile = file } label: {
             HStack(alignment: .top, spacing: 12) {
                 AsyncImage(url: info?.stillURL) { phase in
@@ -224,7 +258,19 @@ struct TitleDetailView: View {
                     }
                 }
                 .frame(width: 112, height: 63)
+                .overlay(alignment: .bottom) {
+                    if let paused { ProgressBar(fraction: paused.progress / 100).padding(4) }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if isWatched {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.white, CinemaTheme.green)
+                            .padding(4)
+                            .accessibilityLabel("Watched")
+                    }
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .opacity(isWatched ? 0.7 : 1)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("\(file.number.episode ?? 0). \(info?.name ?? "Episode \(file.number.episode ?? 0)")")
                         .font(.subheadline.weight(.medium))
@@ -236,16 +282,30 @@ struct TitleDetailView: View {
                         .font(.caption2)
                         .foregroundStyle(CinemaTheme.secondary)
                         .lineLimit(2)
+                    if !subs.isEmpty { SubtitleBadges(subs: subs) }
                 }
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button("Subtitles…", systemImage: "captions.bubble") { subtitleFile = SubtitleTargetRef(file: file) }
+            if model.isTraktConnected, let key {
+                Button(isWatched ? "Mark unwatched" : "Mark watched", systemImage: isWatched ? "eye.slash" : "eye") {
+                    Task { await model.setWatched(show: item, episodes: [key], !isWatched) }
+                }
+                if let paused {
+                    Button("Remove from Continue watching", systemImage: "xmark.circle") { Task { await model.removePlayback(paused.id) } }
+                }
+            }
+        }
     }
 
-    private func fileRow(_ file: GalleryFile, title: String, subtitle: String) -> some View {
-        Button { playFile = file } label: {
+    private func fileRow(_ file: GalleryFile, title: String, subtitle: String, item: GalleryTitle?) -> some View {
+        let subs = item.map { SubtitleEntries.active(model.subtitles(for: file, in: $0)) } ?? []
+        let paused = item.flatMap { $0.isMovie && file.isMain ? model.playback($0, episode: nil) : nil }
+        return Button { playFile = file } label: {
             HStack(spacing: 12) {
                 Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(CinemaTheme.blue)
                 VStack(alignment: .leading, spacing: 2) {
@@ -254,14 +314,33 @@ struct TitleDetailView: View {
                     if !file.subfolder.isEmpty {
                         Label(file.subfolder, systemImage: "folder").font(.caption2).foregroundStyle(CinemaTheme.secondary).lineLimit(1)
                     }
+                    if !subs.isEmpty { SubtitleBadges(subs: subs) }
+                    if let paused {
+                        ProgressBar(fraction: paused.progress / 100).frame(maxWidth: 160).padding(.top, 2)
+                    }
                 }
                 Spacer(minLength: 0)
+                if item != nil {
+                    Button { subtitleFile = SubtitleTargetRef(file: file) } label: {
+                        Image(systemName: "captions.bubble").font(.title3).foregroundStyle(CinemaTheme.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Subtitles")
+                }
             }
             .padding(12)
             .background(CinemaTheme.surface, in: RoundedRectangle(cornerRadius: 12))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if item != nil {
+                Button("Subtitles…", systemImage: "captions.bubble") { subtitleFile = SubtitleTargetRef(file: file) }
+            }
+            if let paused {
+                Button("Remove from Continue watching", systemImage: "xmark.circle") { Task { await model.removePlayback(paused.id) } }
+            }
+        }
     }
 
     // MARK: Actions
@@ -279,6 +358,32 @@ struct TitleDetailView: View {
                 Button("Mark as manual", systemImage: "hand.raised") { setSource(item, "manual") }
             }
             Button("Show folders", systemImage: "folder") { showFolders = true }
+            Section {
+                if item.isMovie, let main = item.mainFile {
+                    Button("Subtitles", systemImage: "captions.bubble") { subtitleFile = SubtitleTargetRef(file: main) }
+                }
+                Button("All subtitles", systemImage: "list.bullet.rectangle") { showSubtitleOverview = true }
+            }
+            if model.isTraktConnected {
+                Section("Trakt") {
+                    if item.isMovie {
+                        let watched = model.isWatched(item)
+                        Button(watched ? "Mark unwatched" : "Mark watched", systemImage: watched ? "eye.slash" : "eye") {
+                            Task { await model.setWatched(movie: item, !watched) }
+                        }
+                    } else {
+                        Button("Mark all episodes in library watched", systemImage: "eye") {
+                            Task { await model.setWatched(show: item, episodes: Array(item.presentEpisodes.filter { $0.season > 0 }), true) }
+                        }
+                        Button("Mark whole show watched", systemImage: "checkmark.circle") {
+                            Task { await model.setWatched(show: item, true) }
+                        }
+                        Button("Mark show unwatched", systemImage: "eye.slash") {
+                            Task { await model.setWatched(show: item, false) }
+                        }
+                    }
+                }
+            }
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -356,5 +461,88 @@ struct FoldersSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
+    }
+}
+
+/// The panel at the top of a show: which aired seasons and episodes the library lacks.
+struct MissingEpisodesPanel: View {
+    let report: CompletenessReport
+    @State private var expanded = false
+
+    var body: some View {
+        Group {
+            if report.isComplete {
+                Label("All \(report.airedCount) aired episodes are in your library", systemImage: "checkmark.seal.fill")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(CinemaTheme.green)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(CinemaTheme.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            } else if report.missingCount > 0 {
+                let lines = report.lines
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(summary, systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(CinemaTheme.amber)
+                    ForEach(expanded ? lines : Array(lines.prefix(4)), id: \.season) { line in
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Season \(line.season)").font(.caption.weight(.semibold)).frame(width: 74, alignment: .leading)
+                            Text(line.text).font(.caption).foregroundStyle(CinemaTheme.secondary)
+                        }
+                    }
+                    if lines.count > 4 {
+                        Button(expanded ? "Show less" : "Show all \(lines.count) seasons") { expanded.toggle() }
+                            .font(.caption.weight(.medium))
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(CinemaTheme.amber.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(CinemaTheme.amber.opacity(0.35)) }
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var summary: String {
+        var parts: [String] = []
+        if !report.missingSeasons.isEmpty {
+            parts.append(report.missingSeasons.count == 1 ? "1 season" : "\(report.missingSeasons.count) seasons")
+        }
+        let partial = report.missingEpisodes.filter { !report.missingSeasons.contains($0.key) }.values.reduce(0) { $0 + $1.count }
+        if partial > 0 { parts.append(partial == 1 ? "1 episode" : "\(partial) episodes") }
+        return "Missing " + parts.joined(separator: " and ") + " of \(report.airedCount) aired"
+    }
+}
+
+struct SubtitleBadges: View {
+    let subs: [SavedSubtitle]
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "captions.bubble.fill").font(.caption2).foregroundStyle(CinemaTheme.secondary)
+            ForEach(subs) { sub in
+                Text(sub.language.uppercased())
+                    .font(.caption2.weight(.semibold).monospaced())
+                    .foregroundStyle(CinemaTheme.blue)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Subtitles: " + subs.map(\.languageName).joined(separator: ", "))
+    }
+}
+
+struct ProgressBar: View {
+    let fraction: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.25))
+                Capsule().fill(CinemaTheme.blue).frame(width: proxy.size.width * min(max(fraction, 0), 1))
+            }
+        }
+        .frame(height: 4)
+        .accessibilityLabel("\(Int((fraction * 100).rounded())) percent watched")
     }
 }

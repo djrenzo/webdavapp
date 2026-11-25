@@ -62,6 +62,7 @@ enum CatalogBuilder {
                 posterURL: Py.text(row["poster_url"]).flatMap(URL.init(string:)),
                 plot: Py.text(row["plot"]),
                 tmdbID: Py.text(row["tmdb_id"]),
+                imdbID: Py.text(row["imdb_id"]),
                 folders: folders.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending },
                 latestSeen: latest
             )
