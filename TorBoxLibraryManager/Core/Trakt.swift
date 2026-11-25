@@ -6,15 +6,13 @@ import FoundationNetworking
 enum TraktError: LocalizedError {
     case notConfigured
     case notConnected
-    case codeExpired
     case denied
     case status(Int, String)
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: return "Add your Trakt app’s Client ID and Client Secret in Settings first."
+        case .notConfigured: return "Add your Trakt app’s Client ID in Settings first."
         case .notConnected: return "Connect Trakt in Settings first."
-        case .codeExpired: return "The Trakt code expired. Start again."
         case .denied: return "Access was denied on trakt.tv."
         case .status(let code, let message):
             if code == 401 || code == 403 { return "Trakt refused the request (\(code)). Connect Trakt again in Settings." }
@@ -52,12 +50,77 @@ struct TraktToken: Codable, Sendable {
     }
 }
 
-struct TraktDeviceCode: Sendable {
-    let deviceCode: String
-    let userCode: String
-    let verificationURL: String
-    let expiresAt: Date
-    let interval: TimeInterval
+/// PKCE (RFC 7636) for the authorization code flow: only the Client ID is needed.
+struct TraktPKCE: Sendable {
+    let verifier: String
+    let challenge: String
+    let state: String
+
+    static func make() -> TraktPKCE {
+        let verifier = randomString(64)
+        return TraktPKCE(verifier: verifier, challenge: challenge(for: verifier), state: randomString(24))
+    }
+
+    /// BASE64URL(SHA256(verifier)) without padding.
+    static func challenge(for verifier: String) -> String {
+        base64URL(SHA256.hash(Array(verifier.utf8)))
+    }
+
+    static func base64URL(_ bytes: [UInt8]) -> String {
+        Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private static func randomString(_ length: Int) -> String {
+        let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        var generator = SystemRandomNumberGenerator()
+        return String((0..<length).map { _ in alphabet[Int(generator.next(upperBound: UInt64(alphabet.count)))] })
+    }
+}
+
+/// Plain SHA-256 (FIPS 180-4), so the PKCE challenge also works in the Linux tests.
+enum SHA256 {
+    private static let k: [UInt32] = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+    ]
+
+    static func hash(_ message: [UInt8]) -> [UInt8] {
+        var h: [UInt32] = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+        var data = message
+        let bitLength = UInt64(message.count) * 8
+        data.append(0x80)
+        while data.count % 64 != 56 { data.append(0) }
+        for shift in stride(from: 56, through: 0, by: -8) { data.append(UInt8(truncatingIfNeeded: bitLength >> UInt64(shift))) }
+        func rotate(_ x: UInt32, _ n: UInt32) -> UInt32 { (x >> n) | (x << (32 - n)) }
+        var w = [UInt32](repeating: 0, count: 64)
+        for chunk in stride(from: 0, to: data.count, by: 64) {
+            for i in 0..<16 {
+                w[i] = (0..<4).reduce(UInt32(0)) { ($0 << 8) | UInt32(data[chunk + i * 4 + $1]) }
+            }
+            for i in 16..<64 {
+                let s0 = rotate(w[i - 15], 7) ^ rotate(w[i - 15], 18) ^ (w[i - 15] >> 3)
+                let s1 = rotate(w[i - 2], 17) ^ rotate(w[i - 2], 19) ^ (w[i - 2] >> 10)
+                w[i] = w[i - 16] &+ s0 &+ w[i - 7] &+ s1
+            }
+            var (a, b, c, d, e, f, g, hh) = (h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7])
+            for i in 0..<64 {
+                let t1 = hh &+ (rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25)) &+ ((e & f) ^ (~e & g)) &+ k[i] &+ w[i]
+                let t2 = (rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22)) &+ ((a & b) ^ (a & c) ^ (b & c))
+                (hh, g, f, e, d, c, b, a) = (g, f, e, d &+ t1, c, b, a, t1 &+ t2)
+            }
+            for (i, value) in [a, b, c, d, e, f, g, hh].enumerated() { h[i] = h[i] &+ value }
+        }
+        return h.flatMap { value in (0..<4).map { UInt8(truncatingIfNeeded: value >> UInt32(24 - $0 * 8)) } }
+    }
 }
 
 /// Ids as Trakt reports them; tmdb is what the library matches on, imdb the fallback.
@@ -155,69 +218,69 @@ struct TraktState: Codable, Sendable {
     }
 }
 
-/// Trakt API v2 with the device code flow (no redirect needed on a phone). The user brings
-/// their own API app (trakt.tv/oauth/applications); tokens live in the Keychain.
+/// Trakt API v2. Sign-in is the authorization code flow with PKCE, so the user's own API
+/// app (trakt.tv/oauth/applications) only needs to provide a Client ID. Tokens live in the Keychain.
 actor TraktClient {
     static let api = "https://api.trakt.tv"
-    static let redirectURI = "urn:ietf:wg:oauth:2.0:oob"
+    static let authorizeURL = "https://trakt.tv/oauth/authorize"
+    /// Must be listed as a Redirect URI in the Trakt app.
+    static let redirectURI = "webdavify://trakt"
+    static let callbackScheme = "webdavify"
 
     let clientID: String
-    let clientSecret: String
 
-    init(clientID: String, clientSecret: String) {
+    init(clientID: String) {
         self.clientID = clientID
-        self.clientSecret = clientSecret
     }
 
     static func configured() -> TraktClient? {
         let id = UserDefaults.standard.string(forKey: "trakt.clientID")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let secret = Secrets.traktSecret() ?? ""
-        guard !id.isEmpty, !secret.isEmpty else { return nil }
-        return TraktClient(clientID: id, clientSecret: secret)
+        return id.isEmpty ? nil : TraktClient(clientID: id)
     }
 
-    // MARK: Device auth
+    // MARK: Sign-in (authorization code + PKCE)
 
-    func deviceCode() async throws -> TraktDeviceCode {
-        let object = try await send("POST", "/oauth/device/code", body: ["client_id": .string(clientID)], auth: false)
-        guard let code = Py.text(object["device_code"]), let user = Py.text(object["user_code"]) else {
-            throw TraktError.status(200, "No device code in the response")
-        }
-        return TraktDeviceCode(
-            deviceCode: code, userCode: user,
-            verificationURL: Py.text(object["verification_url"]) ?? "https://trakt.tv/activate",
-            expiresAt: Date().addingTimeInterval(object["expires_in"]?.pythonDouble ?? 600),
-            interval: max(object["interval"]?.pythonDouble ?? 5, 1)
-        )
+    /// The trakt.tv page the user signs in on; it redirects to `redirectURI?code=…&state=…`.
+    nonisolated func authorizationURL(_ pkce: TraktPKCE) -> URL {
+        var components = URLComponents(string: Self.authorizeURL)!
+        components.queryItems = [
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "client_id", value: clientID),
+            URLQueryItem(name: "redirect_uri", value: Self.redirectURI),
+            URLQueryItem(name: "state", value: pkce.state),
+            URLQueryItem(name: "code_challenge", value: pkce.challenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
+        ]
+        return components.url!
     }
 
-    /// Poll until the user approves the code. Saves the token.
-    func waitForToken(_ code: TraktDeviceCode) async throws -> TraktToken {
-        var interval = code.interval
-        while Date() < code.expiresAt {
-            try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-            let (data, response) = try await raw("POST", "/oauth/device/token", body: [
-                "code": .string(code.deviceCode), "client_id": .string(clientID), "client_secret": .string(clientSecret),
-            ], token: nil)
-            switch response.statusCode {
-            case 200:
-                let token = try TraktToken(JSONCoding.decodeObject(data))
-                token.save()
-                return token
-            case 400: continue                  // pending
-            case 429: interval += 1; continue   // slow down
-            case 410: throw TraktError.codeExpired
-            case 418: throw TraktError.denied
-            default: throw TraktError.status(response.statusCode, String(decoding: data.prefix(200), as: UTF8.self))
-            }
+    /// Read the redirect, check its state and trade the code for a token. Saves the token.
+    func finishSignIn(callback: URL, pkce: TraktPKCE) async throws -> TraktToken {
+        let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+        if let error = value("error") {
+            throw error == "access_denied" ? TraktError.denied : TraktError.status(400, value("error_description") ?? error)
         }
-        throw TraktError.codeExpired
+        guard value("state") == pkce.state, let code = value("code") else {
+            throw TraktError.status(400, "The sign-in reply didn’t match. Try again.")
+        }
+        let (data, response) = try await raw("POST", "/oauth/token", body: [
+            "code": .string(code), "client_id": .string(clientID), "redirect_uri": .string(Self.redirectURI),
+            "grant_type": "authorization_code", "code_verifier": .string(pkce.verifier),
+        ], token: nil)
+        guard response.statusCode == 200 else {
+            let object = try? JSONCoding.decodeObject(data)
+            throw TraktError.status(response.statusCode, Py.text(object?["error_description"]) ?? Py.text(object?["error"]) ?? "")
+        }
+        let token = try TraktToken(JSONCoding.decodeObject(data))
+        token.save()
+        return token
     }
 
     func revoke() async {
         guard let token = TraktToken.load() else { return }
         _ = try? await raw("POST", "/oauth/revoke", body: [
-            "token": .string(token.accessToken), "client_id": .string(clientID), "client_secret": .string(clientSecret),
+            "token": .string(token.accessToken), "client_id": .string(clientID),
         ], token: nil)
         Secrets.setTraktToken(nil)
     }
@@ -233,7 +296,7 @@ actor TraktClient {
     private func refresh(_ token: TraktToken) async throws -> TraktToken {
         let (data, response) = try await raw("POST", "/oauth/token", body: [
             "refresh_token": .string(token.refreshToken), "client_id": .string(clientID),
-            "client_secret": .string(clientSecret), "redirect_uri": .string(Self.redirectURI),
+            "redirect_uri": .string(Self.redirectURI),
             "grant_type": "refresh_token",
         ], token: nil)
         guard response.statusCode == 200 else {

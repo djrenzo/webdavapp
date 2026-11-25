@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -22,8 +23,9 @@ struct SettingsView: View {
     @State private var showLanguages = false
     @State private var subtitleLanguages: Set<String> = []
     @State private var traktID = ""
-    @State private var traktSecret = ""
-    @State private var showTraktConnect = false
+    @State private var isConnectingTrakt = false
+    @State private var traktConnectError: String?
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     var body: some View {
         NavigationStack {
@@ -62,7 +64,7 @@ struct SettingsView: View {
             .sheet(isPresented: $showLanguages, onDismiss: { model.subtitleLanguages = subtitleLanguages.sorted() }) {
                 LanguagePicker(selection: $subtitleLanguages)
             }
-            .sheet(isPresented: $showTraktConnect) { TraktConnectView(model: model) }
+
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
                 if case .success(let url) = result { Task { await model.importOverrides(from: url) } }
             }
@@ -82,7 +84,6 @@ struct SettingsView: View {
         supabaseEmail = model.settings.supabaseEmail
         subtitleLanguages = Set(model.subtitleLanguages)
         traktID = model.traktClientID
-        traktSecret = Secrets.traktSecret() ?? ""
     }
 
     // MARK: Subtitles
@@ -158,24 +159,54 @@ struct SettingsView: View {
                 TextField("Client ID", text: $traktID)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                SecureField("Client Secret", text: $traktSecret)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                Button("Connect Trakt") {
-                    model.traktClientID = traktID
-                    Secrets.setTraktSecret(traktSecret.trimmingCharacters(in: .whitespacesAndNewlines))
-                    showTraktConnect = true
+                LabeledContent("Redirect URI") {
+                    Text(TraktClient.redirectURI).font(.footnote.monospaced()).textSelection(.enabled)
                 }
-                .disabled(traktID.trimmingCharacters(in: .whitespaces).isEmpty || traktSecret.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button {
+                    Task { await connectTrakt() }
+                } label: {
+                    HStack {
+                        Text("Sign in with Trakt")
+                        if isConnectingTrakt { Spacer(); ProgressView() }
+                    }
+                }
+                .disabled(traktID.trimmingCharacters(in: .whitespaces).isEmpty || isConnectingTrakt)
+                if let traktConnectError {
+                    Label(traktConnectError, systemImage: "exclamationmark.triangle.fill").font(.caption).foregroundStyle(CinemaTheme.amber)
+                }
             }
         } header: {
             Text("Trakt")
         } footer: {
             Text(model.isTraktConnected
                  ? "Watched movies and episodes, Continue watching and Keep going come from Trakt. Connect Infuse to Trakt too, so what you play there is tracked."
-                 : "Create an app at trakt.tv/oauth/applications with redirect URI urn:ietf:wg:oauth:2.0:oob, then paste its Client ID and Secret here.")
+                 : "Create an app at trakt.tv/oauth/applications with the redirect URI above, then paste its Client ID here. Sign-in uses PKCE, so no secret is needed.")
         }
         .listRowBackground(CinemaTheme.surface)
+    }
+
+    /// Authorization code + PKCE in Apple's web sign-in sheet; it closes on the
+    /// webdavify:// redirect.
+    private func connectTrakt() async {
+        model.traktClientID = traktID
+        guard let client = TraktClient.configured() else { return }
+        isConnectingTrakt = true
+        traktConnectError = nil
+        defer { isConnectingTrakt = false }
+        let pkce = TraktPKCE.make()
+        do {
+            let callback = try await webAuthenticationSession.authenticate(
+                using: client.authorizationURL(pkce),
+                callbackURLScheme: TraktClient.callbackScheme,
+                preferredBrowserSession: .shared
+            )
+            _ = try await client.finishSignIn(callback: callback, pkce: pkce)
+            await model.traktDidConnect()
+        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
+            // Closed by the user.
+        } catch {
+            traktConnectError = error.localizedDescription
+        }
     }
 
     // MARK: TMDB
@@ -389,74 +420,5 @@ struct PushSummaryView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .preferredColorScheme(.dark)
-    }
-}
-
-/// Trakt device sign-in: show the code, open trakt.tv/activate, wait for approval.
-struct TraktConnectView: View {
-    let model: AppModel
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
-    @State private var code: TraktDeviceCode?
-    @State private var error: String?
-    @State private var task: Task<Void, Never>?
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 22) {
-                if let code {
-                    Text("Enter this code on trakt.tv").font(.headline)
-                    Text(code.userCode)
-                        .font(.system(size: 40, weight: .bold, design: .monospaced))
-                        .textSelection(.enabled)
-                    Button("Copy code & open Trakt") {
-                        UIPasteboard.general.string = code.userCode
-                        if let url = URL(string: code.verificationURL) { openURL(url) }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    HStack(spacing: 8) {
-                        ProgressView()
-                        Text("Waiting for approval…").font(.footnote).foregroundStyle(CinemaTheme.secondary)
-                    }
-                } else if let error {
-                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(CinemaTheme.amber)
-                    Button("Try again") { start() }.buttonStyle(.bordered)
-                } else {
-                    ProgressView("Asking Trakt for a code…")
-                }
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(CinemaTheme.background)
-            .navigationTitle("Connect Trakt")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
-            .onAppear(perform: start)
-            .onDisappear { task?.cancel() }
-        }
-        .preferredColorScheme(.dark)
-    }
-
-    private func start() {
-        task?.cancel()
-        code = nil
-        error = nil
-        task = Task {
-            guard let client = TraktClient.configured() else {
-                error = TraktError.notConfigured.localizedDescription
-                return
-            }
-            do {
-                let deviceCode = try await client.deviceCode()
-                code = deviceCode
-                _ = try await client.waitForToken(deviceCode)
-                await model.traktDidConnect()
-                dismiss()
-            } catch is CancellationError {
-            } catch {
-                self.error = error.localizedDescription
-                code = nil
-            }
-        }
     }
 }

@@ -156,5 +156,13 @@ check(UpNext.pick(watched: got, order: order, present: [])?.inLibrary == false, 
 let body = TraktParser.showBody(TraktIDs(tmdb: 1399), episodes: [EpisodeKey(season: 1, episode: 2), EpisodeKey(season: 1, episode: 1), EpisodeKey(season: 2, episode: 1)], seasons: [2])
 check(String(decoding: try! JSONCoding.encode(.object(body)), as: UTF8.self) == #"{"shows":[{"ids":{"tmdb":1399},"seasons":[{"number":2},{"episodes":[{"number":1},{"number":2}],"number":1}]}]}"#, "history body \(String(decoding: try! JSONCoding.encode(.object(body)), as: UTF8.self))")
 
+// PKCE (RFC 7636 appendix B) and SHA-256.
+check(TraktPKCE.challenge(for: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk") == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "pkce challenge")
+check(SHA256.hash(Array("".utf8)).map { String(format: "%02x", $0) }.joined() == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "sha256 empty")
+check(SHA256.hash(Array(String(repeating: "a", count: 1000).utf8)).map { String(format: "%02x", $0) }.joined() == "41edece42d63e8d9bf515a9ba6932e1c20cbc9f5a5d134645adb5db1b9737ea3", "sha256 multi-block")
+let pkce = TraktPKCE.make()
+let authURL = TraktClient(clientID: "abc").authorizationURL(pkce).absoluteString
+check(pkce.verifier.count == 64 && authURL.hasPrefix("https://trakt.tv/oauth/authorize?response_type=code&client_id=abc&redirect_uri=webdavify://trakt&state=") && authURL.contains("code_challenge_method=S256"), "authorize url \(authURL)")
+
 print("\(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

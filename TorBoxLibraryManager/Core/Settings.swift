@@ -18,9 +18,6 @@ enum Secrets {
     static func openSubtitlesKey() -> String? { get("opensubtitles.key") }
     static func setOpenSubtitlesKey(_ value: String?) { set("opensubtitles.key", value) }
 
-    static func traktSecret() -> String? { get("trakt.secret") }
-    static func setTraktSecret(_ value: String?) { set("trakt.secret", value) }
-
     static func traktToken() -> Data? { get("trakt.token").map { Data($0.utf8) } }
     static func setTraktToken(_ value: Data?) { set("trakt.token", value.map { String(decoding: $0, as: UTF8.self) }) }
 
