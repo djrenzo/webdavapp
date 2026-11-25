@@ -23,6 +23,15 @@
       },
       "versions": [
         {
+          "version": "1.0.1",
+          "buildVersion": "2",
+          "date": "2026-11-25T19:31:28Z",
+          "localizedDescription": "WebDAVify 1.0.1",
+          "downloadURL": "https://github.com/djrenzo/webdavapp/releases/download/v1.0.1/WebDAVify.ipa",
+          "size": 823919,
+          "minOSVersion": "17.0"
+        },
+        {
           "version": "1.0.0",
           "buildVersion": "1",
           "date": "2026-11-25T18:45:37Z",
@@ -32,11 +41,11 @@
           "minOSVersion": "17.0"
         }
       ],
-      "version": "1.0.0",
-      "downloadURL": "https://github.com/djrenzo/webdavapp/releases/download/v1.0.0/WebDAVify.ipa",
-      "size": 471688,
-      "versionDate": "2026-11-25T18:45:37Z",
-      "versionDescription": "WebDAVify 1.0.0"
+      "version": "1.0.1",
+      "downloadURL": "https://github.com/djrenzo/webdavapp/releases/download/v1.0.1/WebDAVify.ipa",
+      "size": 823919,
+      "versionDate": "2026-11-25T19:31:28Z",
+      "versionDescription": "WebDAVify 1.0.1"
     }
   ],
   "news": []
