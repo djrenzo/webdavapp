@@ -1,17 +1,16 @@
 import SwiftUI
 
 struct LibraryView: View {
-    @Bindable var model: LibraryModel
+    @Bindable var model: AppModel
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var selectedTitle: GalleryTitle?
-    @State private var showResetConfirmation = false
 
     var body: some View {
         NavigationStack {
             GeometryReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        libraryStatus
+                    VStack(alignment: .leading, spacing: 18) {
+                        RefreshStatusView(model: model)
+                        banners
                         LibraryControls(model: model)
                         gallery(width: proxy.size.width)
                         footer
@@ -21,52 +20,112 @@ struct LibraryView: View {
                     .padding(.bottom, 28)
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .refreshable { await model.refresh() }
             }
             .background(CinemaTheme.background)
             .navigationTitle("Library")
-            .toolbar { libraryToolbar }
+            .toolbar { toolbar }
             .toolbarBackground(CinemaTheme.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .sheet(item: $selectedTitle) { LocalEntryEditor(item: $0, model: model) }
-            .confirmationDialog("Reset the demo library?", isPresented: $showResetConfirmation, titleVisibility: .visible) {
-                Button("Reset demo library", role: .destructive) { Task { await model.resetDemo() } }
-            } message: {
-                Text("Your local demo edits will be replaced with the original sample titles. No online catalog is affected.")
+            .navigationDestination(for: String.self) { key in
+                if let title = model.snapshot.titles.first(where: { $0.id == key }) {
+                    TitleDetailView(model: model, titleID: title.id)
+                } else {
+                    ContentUnavailableView("Title not found", systemImage: "film")
+                }
             }
-            .alert("Couldn’t load the library", isPresented: errorBinding) {
-                Button("OK") { model.errorMessage = nil }
-            } message: { Text(model.errorMessage ?? "Please try again.") }
         }
     }
 
-    private var libraryStatus: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Text("DEMO LIBRARY")
-                .font(.caption2.weight(.semibold)).tracking(1.1)
-                .foregroundStyle(CinemaTheme.blue)
-            Circle().fill(CinemaTheme.secondary.opacity(0.5)).frame(width: 3, height: 3)
-            Text("\(model.titles.count) titles · \(model.folderCount) folders")
-                .font(.caption).foregroundStyle(CinemaTheme.secondary)
-            Spacer(minLength: 0)
+    @ViewBuilder private var banners: some View {
+        if !model.snapshot.conflicts.isEmpty {
+            NavigationLink {
+                ConflictReviewView(model: model)
+            } label: {
+                bannerLabel("\(model.snapshot.conflicts.count) overrides differ from Supabase — Review", symbol: "arrow.triangle.branch")
+            }
+            .buttonStyle(.plain)
         }
-        .accessibilityElement(children: .combine)
+        if let notice = model.noticeMessage {
+            HStack(alignment: .top) {
+                Label(notice, systemImage: "checkmark.circle")
+                    .font(.footnote)
+                    .foregroundStyle(CinemaTheme.blue)
+                Spacer()
+                Button {
+                    model.noticeMessage = nil
+                } label: {
+                    Image(systemName: "xmark").font(.caption)
+                }
+                .foregroundStyle(CinemaTheme.secondary)
+                .accessibilityLabel("Dismiss")
+            }
+        }
+        ForEach(model.lastWarnings, id: \.self) { warning in
+            Label(warning, systemImage: "exclamationmark.triangle.fill")
+                .font(.footnote)
+                .foregroundStyle(CinemaTheme.amber)
+        }
+    }
+
+    private func bannerLabel(_ text: String, symbol: String) -> some View {
+        HStack {
+            Image(systemName: symbol)
+            Text(text).multilineTextAlignment(.leading)
+            Spacer()
+            Image(systemName: "chevron.right").font(.caption)
+        }
+        .font(.footnote.weight(.medium))
+        .foregroundStyle(CinemaTheme.background)
+        .padding(12)
+        .background(CinemaTheme.amber, in: RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder private func gallery(width: CGFloat) -> some View {
-        if model.isLoading {
-            ProgressView("Opening local library…").frame(maxWidth: .infinity).padding(.top, 60)
+        if !model.isLoaded {
+            ProgressView("Opening library…").frame(maxWidth: .infinity).padding(.top, 60)
+        } else if model.snapshot.titles.isEmpty {
+            emptyLibrary
         } else if model.visibleTitles.isEmpty {
-            emptyState
+            ContentUnavailableView {
+                Label("No titles found", systemImage: "magnifyingglass")
+            } description: {
+                Text("Try another title or folder name, or clear your filters.")
+            } actions: {
+                Button("Clear filters", action: model.clearFilters).buttonStyle(.bordered)
+            }
+            .padding(.top, 30)
         } else {
             let count = columnCount(width: width)
             let columns = Array(repeating: GridItem(.flexible(), spacing: 11, alignment: .top), count: count)
             LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
                 ForEach(model.visibleTitles) { item in
-                    Button { selectedTitle = item } label: { PosterCard(item: item) }
-                        .buttonStyle(.plain)
+                    NavigationLink(value: item.id) {
+                        PosterCard(item: item)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
+    }
+
+    private var emptyLibrary: some View {
+        ContentUnavailableView {
+            Label("Your library is empty", systemImage: "film.stack")
+        } description: {
+            if model.snapshot.accounts.isEmpty {
+                Text("Add a TorBox WebDAV account in the Accounts tab, then pull down here to list and identify it.")
+            } else {
+                Text("Pull down to list your accounts and identify their folders. Unmatched folders appear in the Unidentified tab.")
+            }
+        } actions: {
+            if !model.snapshot.accounts.isEmpty {
+                Button("Refresh now") { model.refresh() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.isRefreshing)
+            }
+        }
+        .padding(.top, 30)
     }
 
     private func columnCount(width: CGFloat) -> Int {
@@ -75,51 +134,51 @@ struct LibraryView: View {
         return min(8, max(5, Int((width - 32) / 140)))
     }
 
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No titles found", systemImage: "magnifyingglass")
-        } description: {
-            Text("Try another title or folder name, or clear your filters.")
-        } actions: {
-            Button("Clear filters", action: model.clearFilters).buttonStyle(.bordered)
-        }
-        .padding(.top, 30)
-    }
-
     private var footer: some View {
-        VStack(spacing: 6) {
-            if let message = model.statusMessage {
-                Label(message, systemImage: "checkmark.circle")
-                    .foregroundStyle(CinemaTheme.blue)
-            }
-            Text("Tap a poster to edit its catalog entry.")
-            Text("Saved on this device. Not connected to Kodi or Supabase.")
-        }
-        .font(.caption)
-        .multilineTextAlignment(.center)
-        .foregroundStyle(CinemaTheme.secondary)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 10)
+        Text("\(model.snapshot.titles.count) titles · \(model.snapshot.folderCount) folders · \(model.snapshot.unidentified.count) unidentified")
+            .font(.caption)
+            .foregroundStyle(CinemaTheme.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 10)
     }
 
-    @ToolbarContentBuilder private var libraryToolbar: some ToolbarContent {
+    @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                Button("Reset demo library", systemImage: "arrow.counterclockwise", role: .destructive) {
-                    showResetConfirmation = true
-                }
+            Button {
+                model.refresh()
             } label: {
-                Image(systemName: "ellipsis")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(CinemaTheme.text)
-                    .frame(width: 40, height: 40)
-                    .background(CinemaTheme.surface, in: Circle())
+                Image(systemName: "arrow.clockwise")
             }
-            .accessibilityLabel("Library options")
+            .disabled(model.isRefreshing)
+            .accessibilityLabel("Refresh library")
         }
     }
+}
 
-    private var errorBinding: Binding<Bool> {
-        Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
+/// Thin progress bar with the current pipeline step (§9.1) and a Cancel button.
+struct RefreshStatusView: View {
+    let model: AppModel
+
+    var body: some View {
+        if model.isRefreshing, let progress = model.progress {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(progress.step.rawValue).font(.footnote.weight(.semibold))
+                    Spacer()
+                    Button("Cancel", role: .cancel) { model.cancelRefresh() }
+                        .font(.footnote)
+                }
+                ProgressView(value: min(max(progress.fraction, 0), 1))
+                    .tint(CinemaTheme.blue)
+                if !progress.detail.isEmpty {
+                    Text(progress.detail)
+                        .font(.caption)
+                        .foregroundStyle(CinemaTheme.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(12)
+            .background(CinemaTheme.surface, in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 }

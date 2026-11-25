@@ -9,7 +9,7 @@ actor PosterCache {
         let cache = URLCache(
             memoryCapacity: 24 * 1024 * 1024,
             diskCapacity: 200 * 1024 * 1024,
-            diskPath: "TorBoxDemoPosters"
+            diskPath: "TorBoxPosters"
         )
         self.cache = cache
         let config = URLSessionConfiguration.default
@@ -17,6 +17,10 @@ actor PosterCache {
         config.requestCachePolicy = .returnCacheDataElseLoad
         config.timeoutIntervalForRequest = 30
         session = URLSession(configuration: config)
+    }
+
+    func clear() {
+        cache.removeAllCachedResponses()
     }
 
     func data(for url: URL) async throws -> Data {

@@ -1,0 +1,748 @@
+{
+ "parse": {
+  "[ OxTorrent.com ] Game.Of.Thrones.Integral.(S01 à S08).MULTI.1080p.BluRay.HDLight.AC3.x264": {
+   "title": "Game Of Thrones",
+   "year": null,
+   "tv_hint": true
+  },
+  "The.Office.Complete.Series.1080p": {
+   "title": "The Office",
+   "year": null,
+   "tv_hint": true
+  },
+  "Breaking Bad Collection (2008)": {
+   "title": "Breaking Bad",
+   "year": 2008,
+   "tv_hint": false
+  },
+  "Dune.2021.1080p": {
+   "title": "Dune",
+   "year": 2021,
+   "tv_hint": false
+  },
+  "1917.2019.1080p.BluRay": {
+   "title": "1917",
+   "year": 2019,
+   "tv_hint": false
+  },
+  "Integral.Man.2019": {
+   "title": "Integral Man",
+   "year": 2019,
+   "tv_hint": false
+  },
+  "Frieren - Sousou no Frieren S01": {
+   "title": "Frieren - Sousou no Frieren",
+   "year": null,
+   "tv_hint": true
+  },
+  "The.Bear.S03.1080p.WEB": {
+   "title": "The Bear",
+   "year": null,
+   "tv_hint": true
+  },
+  "Shōgun (2024) Season 1 [1080p]": {
+   "title": "Shōgun",
+   "year": 2024,
+   "tv_hint": true
+  },
+  "Oppenheimer.2023.2160p.UHD.BluRay.x265-GROUP.mkv": {
+   "title": "Oppenheimer",
+   "year": 2023,
+   "tv_hint": false
+  },
+  "Le Bureau des Légendes - Saison 2": {
+   "title": "Le Bureau des Légendes",
+   "year": null,
+   "tv_hint": true
+  },
+  "Die.Hard.1988.REMASTERED": {
+   "title": "Die Hard",
+   "year": 1988,
+   "tv_hint": false
+  },
+  "Blade Runner 2049 (2017)": {
+   "title": "Blade Runner",
+   "year": 2049,
+   "tv_hint": false
+  },
+  "Some_Movie_Name_2010_720p": {
+   "title": "Some Movie Name",
+   "year": 2010,
+   "tv_hint": false
+  },
+  "{Tag} [Other] Spirited Away": {
+   "title": "Spirited Away",
+   "year": null,
+   "tv_hint": false
+  },
+  "2012": {
+   "title": "2012",
+   "year": null,
+   "tv_hint": false
+  },
+  "Taxi Driver 1976 Directors.Cut": {
+   "title": "Taxi Driver",
+   "year": 1976,
+   "tv_hint": false
+  },
+  "Mr. Robot S01-S04 Complete": {
+   "title": "Mr. Robot",
+   "year": null,
+   "tv_hint": true
+  },
+  "Avatar - The Way of Water / Avatar 2": {
+   "title": "Avatar - The Way of Water / Avatar 2",
+   "year": null,
+   "tv_hint": false
+  },
+  "Doctor.Who.2005.1x05.mkv": {
+   "title": "Doctor Who",
+   "year": 2005,
+   "tv_hint": true
+  }
+ },
+ "queries": {
+  "[ OxTorrent.com ] Game.Of.Thrones.Integral.(S01 à S08).MULTI.1080p.BluRay.HDLight.AC3.x264": [
+   "Game Of Thrones"
+  ],
+  "The.Office.Complete.Series.1080p": [
+   "The Office"
+  ],
+  "Breaking Bad Collection (2008)": [
+   "Breaking Bad"
+  ],
+  "Dune.2021.1080p": [
+   "Dune"
+  ],
+  "1917.2019.1080p.BluRay": [
+   "1917"
+  ],
+  "Integral.Man.2019": [
+   "Integral Man"
+  ],
+  "Frieren - Sousou no Frieren S01": [
+   "Frieren - Sousou no Frieren",
+   "Frieren",
+   "Sousou no Frieren"
+  ],
+  "The.Bear.S03.1080p.WEB": [
+   "The Bear"
+  ],
+  "Shōgun (2024) Season 1 [1080p]": [
+   "Shōgun"
+  ],
+  "Oppenheimer.2023.2160p.UHD.BluRay.x265-GROUP.mkv": [
+   "Oppenheimer"
+  ],
+  "Le Bureau des Légendes - Saison 2": [
+   "Le Bureau des Légendes"
+  ],
+  "Die.Hard.1988.REMASTERED": [
+   "Die Hard"
+  ],
+  "Blade Runner 2049 (2017)": [
+   "Blade Runner"
+  ],
+  "Some_Movie_Name_2010_720p": [
+   "Some Movie Name"
+  ],
+  "{Tag} [Other] Spirited Away": [
+   "Spirited Away"
+  ],
+  "2012": [
+   "2012"
+  ],
+  "Taxi Driver 1976 Directors.Cut": [
+   "Taxi Driver"
+  ],
+  "Mr. Robot S01-S04 Complete": [
+   "Mr. Robot"
+  ],
+  "Avatar - The Way of Water / Avatar 2": [
+   "Avatar - The Way of Water / Avatar 2",
+   "Avatar",
+   "The Way of Water",
+   "Avatar 2"
+  ],
+  "Doctor.Who.2005.1x05.mkv": [
+   "Doctor Who"
+  ]
+ },
+ "normalize": {
+  "The Lord of the Rings: The Two Towers": "lord of the rings the two towers",
+  "Amélie": "amelie",
+  "Fast & Furious": "fast and furious",
+  "the": "the",
+  "Les Misérables": "miserables",
+  "ＡＢＣ　ｄｅｆ": "abc def",
+  "Pokémon: The Movie": "pokemon the movie"
+ },
+ "ratio": [
+  [
+   "game of thrones integral",
+   "game of thrones",
+   0.7692307692307693
+  ],
+  [
+   "dune",
+   "dune part two",
+   0.47058823529411764
+  ],
+  [
+   "frieren",
+   "frieren beyond journey s end",
+   0.4
+  ],
+  [
+   "abcabcabc",
+   "cabcab",
+   0.8
+  ],
+  [
+   "the office",
+   "office",
+   0.75
+  ],
+  [
+   "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy",
+   "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxyz",
+   0.9776876267748479
+  ],
+  [
+   "",
+   "",
+   1.0
+  ]
+ ],
+ "episode": {
+  "Show.S01E02.mkv": [
+   1,
+   2
+  ],
+  "Show.1x05.mkv": [
+   1,
+   5
+  ],
+  "08 - Puines.mkv": [
+   null,
+   null
+  ],
+  "Show - E21 [BD].mkv": [
+   null,
+   null
+  ],
+  "Show.S04E01.mkv": [
+   4,
+   1
+  ],
+  "1080p.mkv": [
+   null,
+   null
+  ],
+  "Show.2019.E02.1080p.mkv": [
+   null,
+   null
+  ],
+  "Episode 7.mp4": [
+   null,
+   null
+  ],
+  "ep12.mkv": [
+   null,
+   null
+  ],
+  "3_title.mkv": [
+   null,
+   null
+  ],
+  "s2e3.avi": [
+   2,
+   3
+  ],
+  "123abc.mkv": [
+   null,
+   null
+  ]
+ },
+ "bare": {
+  "Show.S01E02.mkv": null,
+  "Show.1x05.mkv": null,
+  "08 - Puines.mkv": 8,
+  "Show - E21 [BD].mkv": 21,
+  "Show.S04E01.mkv": null,
+  "1080p.mkv": null,
+  "Show.2019.E02.1080p.mkv": 2,
+  "Episode 7.mp4": 7,
+  "ep12.mkv": 12,
+  "3_title.mkv": 3,
+  "s2e3.avi": null,
+  "123abc.mkv": null
+ },
+ "guess": {
+  "[ OxTorrent.com ] Game.Of.Thrones.Integral.(S01 à S08).MULTI.1080p.BluRay.HDLight.AC3.x264": 1,
+  "The.Office.Complete.Series.1080p": null,
+  "Breaking Bad Collection (2008)": null,
+  "Dune.2021.1080p": null,
+  "1917.2019.1080p.BluRay": null,
+  "Integral.Man.2019": null,
+  "Frieren - Sousou no Frieren S01": 1,
+  "The.Bear.S03.1080p.WEB": 3,
+  "Shōgun (2024) Season 1 [1080p]": 1,
+  "Oppenheimer.2023.2160p.UHD.BluRay.x265-GROUP.mkv": null,
+  "Le Bureau des Légendes - Saison 2": 2,
+  "Die.Hard.1988.REMASTERED": null,
+  "Blade Runner 2049 (2017)": null,
+  "Some_Movie_Name_2010_720p": null,
+  "{Tag} [Other] Spirited Away": null,
+  "2012": null,
+  "Taxi Driver 1976 Directors.Cut": null,
+  "Mr. Robot S01-S04 Complete": 1,
+  "Avatar - The Way of Water / Avatar 2": null,
+  "Doctor.Who.2005.1x05.mkv": null,
+  "Season 2": 2,
+  "S03": 3,
+  "Stagione 4": 4
+ },
+ "number": [
+  {
+   "override": {},
+   "result": [
+    [
+     3,
+     8,
+     false
+    ],
+    [
+     1,
+     21,
+     false
+    ],
+    [
+     4,
+     1,
+     false
+    ],
+    [
+     null,
+     null,
+     false
+    ]
+   ]
+  },
+  {
+   "override": {
+    "season": 2
+   },
+   "result": [
+    [
+     3,
+     8,
+     false
+    ],
+    [
+     2,
+     21,
+     false
+    ],
+    [
+     4,
+     1,
+     false
+    ],
+    [
+     null,
+     null,
+     false
+    ]
+   ]
+  },
+  {
+   "override": {
+    "season": 3,
+    "force_season": true
+   },
+   "result": [
+    [
+     3,
+     8,
+     false
+    ],
+    [
+     3,
+     21,
+     false
+    ],
+    [
+     3,
+     1,
+     false
+    ],
+    [
+     null,
+     null,
+     false
+    ]
+   ]
+  },
+  {
+   "override": {
+    "title": "X",
+    "type": "movie"
+   },
+   "result": [
+    [
+     null,
+     null,
+     false
+    ],
+    [
+     null,
+     null,
+     true
+    ],
+    [
+     null,
+     null,
+     false
+    ],
+    [
+     null,
+     null,
+     false
+    ]
+   ]
+  },
+  {
+   "override": {
+    "type": "movie"
+   },
+   "result": [
+    [
+     3,
+     8,
+     false
+    ],
+    [
+     1,
+     21,
+     false
+    ],
+    [
+     4,
+     1,
+     false
+    ],
+    [
+     null,
+     null,
+     false
+    ]
+   ]
+  }
+ ],
+ "root": "Game.Of.Thrones.Integral.(S01 à S08).MULTI",
+ "items": [
+  {
+   "name": "08 - Puines.mkv",
+   "path": "/Game.Of.Thrones.Integral.(S01 à S08).MULTI/Game.Of.Thrones.Saison.3.MULTI.1080p/08 - Puines.mkv",
+   "size": 5
+  },
+  {
+   "name": "Show - E21 [BD].mkv",
+   "path": "/Game.Of.Thrones.Integral.(S01 à S08).MULTI/Show - E21 [BD].mkv",
+   "size": 9
+  },
+  {
+   "name": "Show.S04E01.mkv",
+   "path": "/Game.Of.Thrones.Integral.(S01 à S08).MULTI/Show.S04E01.mkv",
+   "size": 7
+  },
+  {
+   "name": "1080p.mkv",
+   "path": "/Game.Of.Thrones.Integral.(S01 à S08).MULTI/1080p.mkv",
+   "size": 3
+  }
+ ],
+ "keys": [
+  [
+   {
+    "title": "Game of Thrones",
+    "type": "tvshow",
+    "tmdb_id": "1399"
+   },
+   "tvshow:tmdb:1399"
+  ],
+  [
+   {
+    "title": "Dune",
+    "type": "movie",
+    "imdb_id": "tt1"
+   },
+   "movie:imdb:tt1"
+  ],
+  [
+   {
+    "title": "The Office",
+    "year": 2005
+   },
+   "tvshow:title:office:2005"
+  ],
+  [
+   {
+    "title": "Amélie",
+    "type": "movie",
+    "year": 2001
+   },
+   "movie:title:amelie:2001"
+  ],
+  [
+   {
+    "title": "X",
+    "type": "weird",
+    "tvdb_id": 5
+   },
+   "tvshow:tvdb:5"
+  ],
+  [
+   {
+    "title": "Y",
+    "tmdb_id": 42
+   },
+   "tvshow:tmdb:42"
+  ]
+ ],
+ "score": [
+  [
+   "Frieren",
+   2023,
+   "tvshow",
+   {
+    "name": "Frieren: Beyond Journey's End",
+    "original_name": "葬送のフリーレン",
+    "first_air_date": "2023-09-29"
+   },
+   [
+    1.05,
+    0.95,
+    2023
+   ]
+  ],
+  [
+   "Frieren",
+   2023,
+   "tvshow",
+   {
+    "title": "Dune",
+    "original_title": "Dune",
+    "release_date": "2021-09-15"
+   },
+   [
+    0.13181818181818183,
+    0.18181818181818182,
+    2021
+   ]
+  ],
+  [
+   "Frieren",
+   2023,
+   "tvshow",
+   {
+    "title": "Dune: Part Two",
+    "release_date": "2024-02-27"
+   },
+   [
+    0.22272727272727272,
+    0.17272727272727273,
+    2024
+   ]
+  ],
+  [
+   "Frieren",
+   2023,
+   "tvshow",
+   {
+    "title": "Game of Thrones",
+    "release_date": ""
+   },
+   [
+    0.2727272727272727,
+    0.2727272727272727,
+    null
+   ]
+  ],
+  [
+   "Dune",
+   2021,
+   "movie",
+   {
+    "name": "Frieren: Beyond Journey's End",
+    "original_name": "葬送のフリーレン",
+    "first_air_date": "2023-09-29"
+   },
+   [
+    0.04999999999999999,
+    0.25,
+    2023
+   ]
+  ],
+  [
+   "Dune",
+   2021,
+   "movie",
+   {
+    "title": "Dune",
+    "original_title": "Dune",
+    "release_date": "2021-09-15"
+   },
+   [
+    1.1,
+    1.0,
+    2021
+   ]
+  ],
+  [
+   "Dune",
+   2021,
+   "movie",
+   {
+    "title": "Dune: Part Two",
+    "release_date": "2024-02-27"
+   },
+   [
+    0.75,
+    0.95,
+    2024
+   ]
+  ],
+  [
+   "Dune",
+   2021,
+   "movie",
+   {
+    "title": "Game of Thrones",
+    "release_date": ""
+   },
+   [
+    0.21052631578947367,
+    0.21052631578947367,
+    null
+   ]
+  ],
+  [
+   "Dune",
+   null,
+   "movie",
+   {
+    "name": "Frieren: Beyond Journey's End",
+    "original_name": "葬送のフリーレン",
+    "first_air_date": "2023-09-29"
+   },
+   [
+    0.25,
+    0.25,
+    2023
+   ]
+  ],
+  [
+   "Dune",
+   null,
+   "movie",
+   {
+    "title": "Dune",
+    "original_title": "Dune",
+    "release_date": "2021-09-15"
+   },
+   [
+    1.0,
+    1.0,
+    2021
+   ]
+  ],
+  [
+   "Dune",
+   null,
+   "movie",
+   {
+    "title": "Dune: Part Two",
+    "release_date": "2024-02-27"
+   },
+   [
+    0.95,
+    0.95,
+    2024
+   ]
+  ],
+  [
+   "Dune",
+   null,
+   "movie",
+   {
+    "title": "Game of Thrones",
+    "release_date": ""
+   },
+   [
+    0.21052631578947367,
+    0.21052631578947367,
+    null
+   ]
+  ],
+  [
+   "Game of Thrones",
+   2011,
+   "tvshow",
+   {
+    "name": "Frieren: Beyond Journey's End",
+    "original_name": "葬送のフリーレン",
+    "first_air_date": "2023-09-29"
+   },
+   [
+    0.22906976744186047,
+    0.27906976744186046,
+    2023
+   ]
+  ],
+  [
+   "Game of Thrones",
+   2011,
+   "tvshow",
+   {
+    "title": "Dune",
+    "original_title": "Dune",
+    "release_date": "2021-09-15"
+   },
+   [
+    0.16052631578947368,
+    0.21052631578947367,
+    2021
+   ]
+  ],
+  [
+   "Game of Thrones",
+   2011,
+   "tvshow",
+   {
+    "title": "Dune: Part Two",
+    "release_date": "2024-02-27"
+   },
+   [
+    0.30714285714285716,
+    0.35714285714285715,
+    2024
+   ]
+  ],
+  [
+   "Game of Thrones",
+   2011,
+   "tvshow",
+   {
+    "title": "Game of Thrones",
+    "release_date": ""
+   },
+   [
+    1.0,
+    1.0,
+    null
+   ]
+  ]
+ ]
+}

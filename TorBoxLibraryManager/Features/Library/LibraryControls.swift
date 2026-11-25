@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LibraryControls: View {
-    @Bindable var model: LibraryModel
+    @Bindable var model: AppModel
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -46,15 +46,15 @@ struct LibraryControls: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 chip("All accounts", id: nil)
-                ForEach(model.accounts) { account in chip(account.name, id: account.id) }
+                ForEach(model.snapshot.accounts.filter(\.isEnabled)) { account in chip(account.name, id: account.id) }
             }
         }
         .contentMargins(.trailing, 4)
     }
 
     private func chip(_ label: String, id: UUID?) -> some View {
-        let selected = model.accountID == id
-        return Button { model.accountID = id } label: {
+        let selected = model.accountFilter == id
+        return Button { model.accountFilter = id } label: {
             Text(label)
                 .font(.footnote.weight(selected ? .semibold : .regular))
                 .foregroundStyle(selected ? CinemaTheme.background : CinemaTheme.secondary)

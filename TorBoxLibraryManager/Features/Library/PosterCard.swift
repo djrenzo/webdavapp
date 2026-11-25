@@ -24,7 +24,7 @@ struct PosterCard: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
-        .accessibilityHint("Opens the local catalog editor")
+        .accessibilityHint("Opens the title details")
     }
 
     private var accessibilityText: String {

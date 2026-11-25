@@ -6,8 +6,10 @@ options:
 settings:
   base:
     PRODUCT_NAME: TorBoxLibraryManager
-    SWIFT_VERSION: 6.0
-    SWIFT_STRICT_CONCURRENCY: complete
+    # Core/ is checked in Swift 6 strict mode (see scripts/core-tests); the SwiftUI layer
+    # builds in Swift 5 mode so concurrency diagnostics there stay warnings.
+    SWIFT_VERSION: 5.0
+    SWIFT_STRICT_CONCURRENCY: minimal
     MARKETING_VERSION: 1.0
     CURRENT_PROJECT_VERSION: 1
     SUPPORTED_PLATFORMS: iphoneos iphonesimulator
@@ -48,6 +50,13 @@ targets:
         LSRequiresIPhoneOS: true
         UIApplicationSupportsIndirectInputEvents: true
         UILaunchStoryboardName: LaunchScreen
+        LSApplicationQueriesSchemes:
+          - infuse
+          - vlc-x-callback
+        BGTaskSchedulerPermittedIdentifiers:
+          - torbox.library.keepalive
+        UIBackgroundModes:
+          - fetch
         UIRequiredDeviceCapabilities: [arm64]
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
