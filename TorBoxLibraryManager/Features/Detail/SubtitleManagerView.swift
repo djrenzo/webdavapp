@@ -21,6 +21,7 @@ struct SubtitleManagerView: View {
     @State private var message: String?
     @State private var searched = false
     @State private var showLanguages = false
+    @State private var editing: SavedSubtitle?
 
     private var item: GalleryTitle? { model.snapshot.titles.first { $0.id == titleID } }
     private var file: GalleryFile? { item?.folders.flatMap(\.files).first { $0.id == fileID } }
@@ -43,6 +44,11 @@ struct SubtitleManagerView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onAppear { if languages.isEmpty { languages = Set(model.subtitleLanguages) } }
             .sheet(isPresented: $showLanguages) { LanguagePicker(selection: $languages) }
+            .sheet(item: $editing) { sub in
+                if let folder {
+                    SubtitleAdjustView(model: model, subtitle: sub, folder: folder)
+                }
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -61,19 +67,29 @@ struct SubtitleManagerView: View {
                     Text("No subtitles yet.").foregroundStyle(CinemaTheme.secondary)
                 }
                 ForEach(saved) { sub in
-                    SavedSubtitleRow(subtitle: sub, isActive: active.contains(sub.url))
-                        .swipeActions {
-                            Button("Remove", role: .destructive) { Task { await model.removeSubtitle(sub, folder: folder) } }
+                    Button { editing = sub } label: {
+                        HStack {
+                            SavedSubtitleRow(subtitle: sub, isActive: active.contains(sub.url))
+                            Spacer(minLength: 0)
+                            Image(systemName: "slider.horizontal.3").foregroundStyle(CinemaTheme.secondary)
                         }
-                        .contextMenu {
-                            Button("Copy link", systemImage: "link") { UIPasteboard.general.string = sub.url }
-                            Button("Remove", systemImage: "trash", role: .destructive) { Task { await model.removeSubtitle(sub, folder: folder) } }
-                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Adjust timing")
+                    .swipeActions {
+                        Button("Remove", role: .destructive) { Task { await model.removeSubtitle(sub, folder: folder) } }
+                    }
+                    .contextMenu {
+                        Button("Adjust timing…", systemImage: "slider.horizontal.3") { editing = sub }
+                        Button("Copy link", systemImage: "link") { UIPasteboard.general.string = sub.url }
+                        Button("Remove", systemImage: "trash", role: .destructive) { Task { await model.removeSubtitle(sub, folder: folder) } }
+                    }
                 }
             } header: {
                 Text("Saved")
             } footer: {
-                Text("Saved with this folder’s match, so Kodi and Supabase get them on the next push. Swipe to remove.")
+                Text("Saved with this folder’s match, so Kodi and Supabase get them on the next push. Tap one to adjust its FPS or offset, swipe to remove.")
             }
             .listRowBackground(CinemaTheme.surface)
 
@@ -245,6 +261,13 @@ struct SubtitleOverviewView: View {
     let model: AppModel
     let titleID: String
     @Environment(\.dismiss) private var dismiss
+    @State private var editing: EditTarget?
+
+    private struct EditTarget: Identifiable {
+        let sub: SavedSubtitle
+        let folder: GalleryFolder
+        var id: String { sub.url }
+    }
 
     private var item: GalleryTitle? { model.snapshot.titles.first { $0.id == titleID } }
 
@@ -261,10 +284,19 @@ struct SubtitleOverviewView: View {
                     ForEach(groups, id: \.title) { group in
                         Section(group.title) {
                             ForEach(group.subs, id: \.sub.url) { pair in
-                                SavedSubtitleRow(subtitle: pair.sub)
-                                    .swipeActions {
-                                        Button("Remove", role: .destructive) { Task { await model.removeSubtitle(pair.sub, folder: pair.folder) } }
+                                Button { editing = EditTarget(sub: pair.sub, folder: pair.folder) } label: {
+                                    HStack {
+                                        SavedSubtitleRow(subtitle: pair.sub)
+                                        Spacer(minLength: 0)
+                                        Image(systemName: "slider.horizontal.3").foregroundStyle(CinemaTheme.secondary)
                                     }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Adjust timing")
+                                .swipeActions {
+                                    Button("Remove", role: .destructive) { Task { await model.removeSubtitle(pair.sub, folder: pair.folder) } }
+                                }
                             }
                         }
                         .listRowBackground(CinemaTheme.surface)
@@ -274,6 +306,9 @@ struct SubtitleOverviewView: View {
             .scrollContentBackground(.hidden)
             .background(CinemaTheme.background)
             .navigationTitle("All subtitles")
+            .sheet(item: $editing) { target in
+                SubtitleAdjustView(model: model, subtitle: target.sub, folder: target.folder)
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
@@ -306,5 +341,147 @@ struct SubtitleOverviewView: View {
             }
         }
         return byKey.values.sorted { ($0.order, $0.title) < ($1.order, $1.title) }
+    }
+}
+
+/// FPS conversion and time shift for one saved subtitle (`fps_from`, `fps_to`, `shift_ms`).
+/// Whoever downloads the subtitle (the Kodi addon) applies them: first rescale by
+/// fps_from / fps_to, then add the shift.
+struct SubtitleAdjustView: View {
+    let model: AppModel
+    let subtitle: SavedSubtitle
+    let folder: GalleryFolder
+    @Environment(\.dismiss) private var dismiss
+    @State private var convertFPS = false
+    @State private var fpsFrom = 23.976
+    @State private var fpsTo = 25.0
+    @State private var delay = true
+    @State private var offset = ""
+    @State private var isSaving = false
+
+    private static let rates: [Double] = [23.976, 24, 25, 29.97, 30, 50, 59.94, 60]
+
+    /// The presets plus whatever is stored, so the pickers always show the saved values.
+    private var rates: [Double] { Array(Set(Self.rates + [fpsFrom, fpsTo])).sorted() }
+
+    private var offsetValue: Int? { offset.isEmpty ? 0 : Int(offset) }
+    private var shiftMs: Int { (offsetValue ?? 0) * (delay ? 1 : -1) }
+    private var isValid: Bool { offsetValue.map { $0 >= 0 && $0 <= 3_600_000 } ?? false }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    SavedSubtitleRow(subtitle: subtitle)
+                }
+                .listRowBackground(CinemaTheme.surface)
+
+                Section {
+                    Toggle("Convert frame rate", isOn: $convertFPS)
+                    if convertFPS {
+                        Picker("Subtitle made for", selection: $fpsFrom) {
+                            ForEach(rates, id: \.self) { Text(rateLabel($0)).tag($0) }
+                        }
+                        Picker("Video plays at", selection: $fpsTo) {
+                            ForEach(rates, id: \.self) { Text(rateLabel($0)).tag($0) }
+                        }
+                    }
+                } header: {
+                    Text("FPS")
+                } footer: {
+                    Text(convertFPS && fpsFrom == fpsTo
+                         ? "Both rates are the same, so nothing is converted."
+                         : "Use this when the subtitle drifts further off as the video plays, e.g. 23.976 → 25 for a PAL release.")
+                }
+                .listRowBackground(CinemaTheme.surface)
+
+                Section {
+                    Picker("Direction", selection: $delay) {
+                        Text("Later").tag(true)
+                        Text("Earlier").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    HStack {
+                        Text("Offset")
+                        Spacer()
+                        TextField("0", text: $offset)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 120)
+                        Text("ms").foregroundStyle(CinemaTheme.secondary)
+                    }
+                    HStack(spacing: 8) {
+                        ForEach([-1000, -100, 100, 1000], id: \.self) { step in
+                            Button(step > 0 ? "+\(step)" : "\(step)") { nudge(step) }
+                                .buttonStyle(.bordered)
+                                .font(.caption.monospacedDigit())
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                } header: {
+                    Text("Offset")
+                } footer: {
+                    Text(isValid
+                         ? (shiftMs == 0 ? "No shift." : String(format: "Subtitles appear %.2f s %@.", abs(Double(shiftMs)) / 1000, shiftMs > 0 ? "later" : "earlier"))
+                         : "Enter a whole number of milliseconds.")
+                }
+                .listRowBackground(CinemaTheme.surface)
+
+                Section {
+                    Button("Reset adjustments", role: .destructive) {
+                        convertFPS = false
+                        offset = ""
+                    }
+                    .disabled(!convertFPS && shiftMs == 0)
+                } footer: {
+                    Text("Kodi applies these when it downloads the subtitle during the library export. Run the export again with overwrite to apply changes to files already there.")
+                }
+                .listRowBackground(CinemaTheme.surface)
+            }
+            .scrollContentBackground(.hidden)
+            .background(CinemaTheme.background)
+            .navigationTitle("Adjust timing")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { Task { await save() } }
+                        .disabled(!isValid || isSaving)
+                }
+            }
+            .onAppear(perform: load)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func rateLabel(_ rate: Double) -> String {
+        String(format: "%g fps", rate)
+    }
+
+    private func nudge(_ step: Int) {
+        let value = shiftMs + step
+        delay = value >= 0
+        offset = value == 0 ? "" : String(abs(value))
+    }
+
+    private func load() {
+        if let from = subtitle.fpsFrom, let to = subtitle.fpsTo {
+            convertFPS = true
+            fpsFrom = from
+            fpsTo = to
+        }
+        let shift = subtitle.shiftMs ?? 0
+        delay = shift >= 0
+        offset = shift == 0 ? "" : String(abs(shift))
+    }
+
+    private func save() async {
+        isSaving = true
+        defer { isSaving = false }
+        await model.adjustSubtitle(
+            subtitle, folder: folder,
+            fpsFrom: convertFPS ? fpsFrom : nil, fpsTo: convertFPS ? fpsTo : nil, shiftMs: shiftMs
+        )
+        dismiss()
     }
 }

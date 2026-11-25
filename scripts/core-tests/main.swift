@@ -164,5 +164,14 @@ let pkce = TraktPKCE.make()
 let authURL = TraktClient(clientID: "abc").authorizationURL(pkce).absoluteString
 check(pkce.verifier.count == 64 && authURL.hasPrefix("https://trakt.tv/oauth/authorize?response_type=code&client_id=abc&redirect_uri=webdavify://trakt&state=") && authURL.contains("code_challenge_method=S256"), "authorize url \(authURL)")
 
+// Subtitle adjustments.
+let adjusted = SubtitleEntries.adjusting(url: "https://subs5.strem.io/x/file/1", fpsFrom: 23.976, fpsTo: 25, shiftMs: 1200, in: showEntry)
+let adjustedSub = SubtitleEntries.saved(adjusted).first { $0.url == "https://subs5.strem.io/x/file/1" }!
+check(adjustedSub.fpsFrom == 23.976 && adjustedSub.fpsTo == 25 && adjustedSub.shiftMs == 1200 && SubtitleEntries.saved(adjusted).map(\.url) == SubtitleEntries.saved(showEntry).map(\.url), "adjust in place")
+let cleared = SubtitleEntries.adjusting(url: "https://subs5.strem.io/x/file/2", fpsFrom: 25, fpsTo: 25, shiftMs: 0, in: showEntry)
+let clearedSub = (cleared["subs"]?.arrayValue ?? [])[1].objectValue!
+check(clearedSub["fps_from"] == nil && clearedSub["fps_to"] == nil && clearedSub["shift_ms"] == nil && clearedSub["hi"] == true, "clear adjustments \(clearedSub)")
+check(SubtitleEntries.adjusting(url: "https://subs5.strem.io/x/file/1", fpsFrom: 23.976, fpsTo: nil, shiftMs: -300, in: showEntry)["subs"]?.arrayValue?[0].objectValue?["fps_from"] == nil, "fps needs both")
+
 print("\(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

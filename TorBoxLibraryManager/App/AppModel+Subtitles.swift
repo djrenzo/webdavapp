@@ -18,6 +18,11 @@ extension AppModel {
         noticeMessage = "\(result.languageName) subtitle saved\(episode.map { " for \($0)" } ?? ""). It syncs with the next push."
     }
 
+    func adjustSubtitle(_ subtitle: SavedSubtitle, folder: GalleryFolder, fpsFrom: Double?, fpsTo: Double?, shiftMs: Int?) async {
+        let latest = await store.overrides[folder.name] ?? folder.entry
+        await setOverride(folder.name, SubtitleEntries.adjusting(url: subtitle.url, fpsFrom: fpsFrom, fpsTo: fpsTo, shiftMs: shiftMs, in: latest))
+    }
+
     func removeSubtitle(_ subtitle: SavedSubtitle, folder: GalleryFolder) async {
         let latest = await store.overrides[folder.name] ?? folder.entry
         await setOverride(folder.name, SubtitleEntries.removing(url: subtitle.url, from: latest))

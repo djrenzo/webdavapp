@@ -183,6 +183,25 @@ enum SubtitleEntries {
         return entry
     }
 
+    /// Set a subtitle's FPS conversion and time shift (the addon's `ADJUSTMENT_KEYS`), in
+    /// place. Like the addon, the FPS pair is only kept when both are positive and differ,
+    /// and the shift only when non-zero; otherwise the keys are removed.
+    static func adjusting(url: String, fpsFrom: Double?, fpsTo: Double?, shiftMs: Int?, in entry: JSONObject) -> JSONObject {
+        var entry = entry
+        let subs = (entry["subs"]?.arrayValue ?? []).map { value -> JSONValue in
+            guard var sub = value.objectValue, Py.text(sub["url"])?.trimmingCharacters(in: .whitespaces) == url else { return value }
+            for key in ["fps_from", "fps_to", "shift_ms"] { sub.removeValue(forKey: key) }
+            if let fpsFrom, let fpsTo, fpsFrom > 0, fpsTo > 0, fpsFrom != fpsTo {
+                sub["fps_from"] = .double(fpsFrom)
+                sub["fps_to"] = .double(fpsTo)
+            }
+            if let shiftMs, shiftMs != 0 { sub["shift_ms"] = .int(shiftMs) }
+            return .object(sub)
+        }
+        entry["subs"] = .array(subs)
+        return entry
+    }
+
     static func removing(url: String, from entry: JSONObject) -> JSONObject {
         var entry = entry
         let kept = (entry["subs"]?.arrayValue ?? []).filter { Py.text($0.objectValue?["url"])?.trimmingCharacters(in: .whitespaces) != url }
